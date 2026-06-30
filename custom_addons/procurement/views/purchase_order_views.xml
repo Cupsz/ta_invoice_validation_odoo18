@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="procurement_po_form" model="ir.ui.view">
+        <field name="name">procurement.po.form</field>
+        <field name="model">purchase.order</field>
+        <field name="arch" type="xml">
+            <form string="Purchase Order">
+                <header>
+                    <button name="button_confirm" string="Confirm Order" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="button_draft" string="Reset to Draft" type="object"
+                            invisible="state not in ['cancel','purchase']"/>
+                    <button name="action_print_po" string="🖨 Print PO" type="object"
+                            class="btn-secondary" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,purchase"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Vendor">
+                            <field name="partner_id" string="Vendor"
+                                   options="{'no_quick_create': True}"/>
+                        </group>
+                        <group string="Tanggal">
+                            <field name="date_order" string="Order Date"/>
+                            <field name="date_planned" string="Expected Receipt Date"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Order Lines">
+                            <field name="order_line" context="{'default_company_id': company_id}">
+                                <list editable="bottom">
+                                    <field name="product_id" string="Product"
+                                           options="{'no_quick_create': True}"/>
+                                    <field name="product_qty" string="Quantity"/>
+                                    <field name="product_uom" string="Unit" groups="uom.group_uom"/>
+                                    <field name="price_unit" string="Unit Price"/>
+                                    <field name="price_subtotal" string="Subtotal" readonly="1"/>
+                                    <field name="taxes_id" column_invisible="1"/>
+                                    <field name="date_planned" column_invisible="1"/>
+                                    <field name="company_id" column_invisible="1"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="amount_total" string="Total" readonly="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="procurement_po_tree" model="ir.ui.view">
+        <field name="name">procurement.po.tree</field>
+        <field name="model">purchase.order</field>
+        <field name="arch" type="xml">
+            <list string="Purchase Orders"
+                  decoration-info="state == 'draft'"
+                  decoration-success="state == 'purchase'">
+                <field name="name" string="PO Number"/>
+                <field name="partner_id" string="Vendor"/>
+                <field name="date_order" string="Order Date"/>
+                <field name="date_planned" string="Expected Receipt"/>
+                <field name="amount_total" string="Total"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'purchase'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="procurement_po_action" model="ir.actions.act_window">
+        <field name="name">Purchase Orders</field>
+        <field name="res_model">purchase.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[
+            (5,0,0),
+            (0,0,{'view_mode':'list','view_id':ref('procurement_po_tree')}),
+            (0,0,{'view_mode':'form','view_id':ref('procurement_po_form')}),
+        ]"/>
+    </record>
+
+</odoo>

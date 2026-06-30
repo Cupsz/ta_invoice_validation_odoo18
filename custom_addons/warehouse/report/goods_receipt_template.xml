@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_gr_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="row mb-3">
+                            <div class="col-7">
+                                <h2 class="mb-0">GOODS RECEIPT</h2>
+                                <h3 class="text-success"><t t-esc="o.gr_number or o.name"/></h3>
+                            </div>
+                            <div class="col-5 text-end">
+                                <span t-if="o.state=='done'" class="badge bg-success fs-6">Done</span>
+                                <br/>
+                                <span t-if="o.gr_condition=='good'" class="badge bg-success">Good</span>
+                                <span t-if="o.gr_condition=='damaged'" class="badge bg-warning">Damaged</span>
+                                <span t-if="o.gr_condition=='rejected'" class="badge bg-danger">Rejected</span>
+                            </div>
+                        </div>
+                        <hr/>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <strong>Vendor:</strong> <t t-esc="o.partner_id.name or '-'"/><br/>
+                                <strong>Purchase Order:</strong> <t t-esc="o.origin or '-'"/>
+                            </div>
+                            <div class="col-6">
+                                <strong>Receive Date:</strong>
+                                <span t-field="o.gr_receive_date" t-options="{'widget':'date'}"/><br/>
+                                <strong>GR Number:</strong> <t t-esc="o.name"/>
+                            </div>
+                        </div>
+                        <div t-if="o.gr_notes" class="mb-3">
+                            <strong>Notes:</strong> <t t-esc="o.gr_notes"/>
+                        </div>
+                        <table class="table table-bordered">
+                            <thead class="table-success">
+                                <tr>
+                                    <th>#</th><th>Product</th>
+                                    <th class="text-center">Qty Ordered</th>
+                                    <th class="text-center">Qty Received</th>
+                                    <th class="text-center">Unit</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.move_ids" t-as="move">
+                                    <td><t t-esc="move_index+1"/></td>
+                                    <td><t t-esc="move.product_id.name"/></td>
+                                    <td class="text-center"><t t-esc="move.product_uom_qty"/></td>
+                                    <td class="text-center"><t t-esc="move.quantity"/></td>
+                                    <td class="text-center"><t t-esc="move.product_uom.name"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row mt-5">
+                            <div class="col-6 text-center">
+                                <p>Diterima oleh,</p><br/><br/>
+                                <p>______________________</p>
+                                <p><strong>Tim Gudang</strong></p>
+                            </div>
+                            <div class="col-6 text-center">
+                                <p>Dikirim oleh,</p><br/><br/>
+                                <p>______________________</p>
+                                <p><strong>Vendor</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

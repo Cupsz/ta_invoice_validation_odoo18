@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="iv_form_view" model="ir.ui.view">
+        <field name="name">invoice.validation.form</field>
+        <field name="model">invoice.validation</field>
+        <field name="arch" type="xml">
+            <form string="Invoice Validation">
+                <header>
+                    <button name="action_run_ocr" string="🔍 Jalankan OCR" type="object"
+                            class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_validate" string="✅ Validate" type="object"
+                            class="btn-success"
+                            invisible="state != 'draft' or not purchase_order_id"
+                            confirm="Jalankan Three-Way Matching sekarang?"/>
+                    <button name="action_reset_draft" string="Reset" type="object"
+                            invisible="state not in ['validated','mismatch']"/>
+                    <button name="action_cancel" string="Cancel" type="object"
+                            invisible="state in ['cancelled']"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,validated,mismatch"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <group string="📄 Upload Invoice">
+                        <field name="invoice_file" string="Invoice PDF" widget="binary"
+                               filename="invoice_filename" readonly="state != 'draft'"/>
+                        <field name="invoice_filename" invisible="1"/>
+                    </group>
+
+                    <group string="🔎 Data Hasil OCR" invisible="not ocr_invoice_number and not ocr_vendor_name">
+                        <group>
+                            <field name="ocr_invoice_number" string="Invoice Number" readonly="1"/>
+                            <field name="ocr_vendor_name" string="Vendor" readonly="1"/>
+                            <field name="ocr_invoice_date" string="Invoice Date (Raw)" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="ocr_po_number" string="PO Number" readonly="1"/>
+                            <field name="ocr_total" string="Total (OCR)" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="📋 Dokumen Referensi" invisible="not purchase_order_id and not stock_picking_id">
+                        <field name="purchase_order_id" string="Purchase Order" readonly="1"/>
+                        <field name="stock_picking_id" string="Goods Receipt" readonly="1"/>
+                    </group>
+
+                    <notebook invisible="not line_ids">
+                        <page string="Detail Item Invoice">
+                            <field name="line_ids" readonly="state != 'draft'">
+                                <list string="Invoice Lines"
+                                      decoration-success="match_status == 'match'"
+                                      decoration-danger="match_status == 'mismatch'"
+                                      decoration-muted="match_status == 'pending'">
+                                    <field name="product_name" string="Product (Invoice)"/>
+                                    <field name="invoice_qty" string="Qty (Invoice)"/>
+                                    <field name="invoice_price" string="Price (Invoice)"/>
+                                    <field name="invoice_subtotal" string="Subtotal"/>
+                                    <field name="po_qty" string="Qty (PO)"/>
+                                    <field name="po_price" string="Price (PO)"/>
+                                    <field name="gr_qty" string="Qty (GR)"/>
+                                    <field name="match_qty" string="Qty ✓"/>
+                                    <field name="match_price" string="Price ✓"/>
+                                    <field name="match_status" string="Status" widget="badge"
+                                           decoration-success="match_status == 'match'"
+                                           decoration-danger="match_status == 'mismatch'"
+                                           decoration-warning="match_status == 'pending'"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Hasil Three-Way Matching" invisible="state == 'draft'">
+                            <group>
+                                <group string="Checklist Matching">
+                                    <field name="match_vendor" string="✔ Vendor"/>
+                                    <field name="match_po" string="✔ PO Number"/>
+                                    <field name="match_qty" string="✔ Quantity"/>
+                                    <field name="match_price" string="✔ Price"/>
+                                    <field name="match_total" string="✔ Total"/>
+                                </group>
+                                <group string="Info Validasi">
+                                    <field name="validated_by" string="Validated By" readonly="1"/>
+                                    <field name="validated_date" string="Validated Date" readonly="1"/>
+                                </group>
+                            </group>
+                            <field name="matching_summary" widget="html" readonly="1"/>
+                            <field name="mismatch_notes" string="Catatan Mismatch" readonly="1"
+                                   invisible="state == 'validated'"/>
+                        </page>
+
+                        <page string="Raw OCR Text (Debug)" groups="base.group_system">
+                            <field name="ocr_raw_text" widget="text" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="iv_tree_view" model="ir.ui.view">
+        <field name="name">invoice.validation.tree</field>
+        <field name="model">invoice.validation</field>
+        <field name="arch" type="xml">
+            <list string="Riwayat Validasi"
+                  decoration-success="state == 'validated'"
+                  decoration-danger="state == 'mismatch'"
+                  decoration-muted="state == 'cancelled'"
+                  decoration-info="state == 'draft'">
+                <field name="name" string="Validation #"/>
+                <field name="ocr_invoice_number" string="Invoice Number"/>
+                <field name="ocr_vendor_name" string="Vendor"/>
+                <field name="purchase_order_id" string="PO"/>
+                <field name="stock_picking_id" string="GR"/>
+                <field name="ocr_total" string="Total"/>
+                <field name="validated_by" string="Validated By"/>
+                <field name="validated_date" string="Date"/>
+                <field name="state" string="Status" widget="badge"
+                       decoration-success="state == 'validated'"
+                       decoration-danger="state == 'mismatch'"
+                       decoration-info="state == 'draft'"
+                       decoration-muted="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="iv_search_view" model="ir.ui.view">
+        <field name="name">invoice.validation.search</field>
+        <field name="model">invoice.validation</field>
+        <field name="arch" type="xml">
+            <search string="Cari Invoice Validation">
+                <field name="name" string="Validation #"/>
+                <field name="ocr_invoice_number" string="Invoice Number"/>
+                <field name="ocr_vendor_name" string="Vendor"/>
+                <field name="purchase_order_id" string="PO Number"/>
+                <separator/>
+                <filter string="Waiting" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="Match" name="match" domain="[('state','=','validated')]"/>
+                <filter string="Mismatch" name="mismatch" domain="[('state','=','mismatch')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Vendor" name="group_vendor" context="{'group_by':'ocr_vendor_name'}"/>
+                    <filter string="Status" name="group_status" context="{'group_by':'state'}"/>
+                    <filter string="Bulan" name="group_month" context="{'group_by':'create_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="iv_action_all" model="ir.actions.act_window">
+        <field name="name">Invoice Validation</field>
+        <field name="res_model">invoice.validation</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Upload Invoice Pertama</p>
+            <p>Upload Invoice PDF dan sistem akan otomatis mengekstrak data dan melakukan Three-Way Matching.</p>
+        </field>
+    </record>
+
+    <record id="iv_action_waiting" model="ir.actions.act_window">
+        <field name="name">Waiting Validation</field>
+        <field name="res_model">invoice.validation</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state','=','draft')]</field>
+        <field name="context">{'search_default_draft': 1}</field>
+    </record>
+
+    <record id="iv_action_match" model="ir.actions.act_window">
+        <field name="name">Invoice Match</field>
+        <field name="res_model">invoice.validation</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state','=','validated')]</field>
+    </record>
+
+    <record id="iv_action_mismatch" model="ir.actions.act_window">
+        <field name="name">Invoice Mismatch</field>
+        <field name="res_model">invoice.validation</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state','=','mismatch')]</field>
+    </record>
+
+</odoo>

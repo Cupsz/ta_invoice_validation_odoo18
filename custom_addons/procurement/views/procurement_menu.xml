@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_procurement_root" name="Procurement" sequence="10"
+              groups="procurement.group_procurement_user"/>
+    <menuitem id="menu_procurement_po" name="Purchase Orders"
+              parent="menu_procurement_root"
+              action="procurement_po_action" sequence="10"
+              groups="procurement.group_procurement_user"/>
+</odoo>

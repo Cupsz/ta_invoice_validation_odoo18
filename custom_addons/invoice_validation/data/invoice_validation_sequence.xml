@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_invoice_validation" model="ir.sequence">
+            <field name="name">Invoice Validation</field>
+            <field name="code">invoice.validation</field>
+            <field name="prefix">IV/%(year)s/%(month)s/</field>
+            <field name="padding">4</field>
+            <field name="number_increment">1</field>
+            <field name="number_next">1</field>
+        </record>
+    </data>
+</odoo>

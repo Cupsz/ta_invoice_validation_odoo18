@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="iv_kanban_view" model="ir.ui.view">
+        <field name="name">invoice.validation.kanban</field>
+        <field name="model">invoice.validation</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column" quick_create="false">
+                <field name="state"/>
+                <field name="name"/>
+                <field name="ocr_invoice_number"/>
+                <field name="ocr_vendor_name"/>
+                <field name="purchase_order_id"/>
+                <field name="ocr_total"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="oe_kanban_content">
+                                <div class="row">
+                                    <div class="col-8"><strong><field name="name"/></strong></div>
+                                    <div class="col-4 text-end">
+                                        <field name="state" widget="label_selection"
+                                               options="{'classes': {
+                                                   'draft':'secondary','validated':'success',
+                                                   'mismatch':'danger','cancelled':'dark'
+                                               }}"/>
+                                    </div>
+                                </div>
+                                <div class="row mt-1">
+                                    <div class="col-12">
+                                        <span class="text-muted">Invoice #:</span>
+                                        <field name="ocr_invoice_number"/>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <span class="text-muted">Vendor:</span>
+                                        <field name="ocr_vendor_name"/>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <span class="text-muted">PO:</span>
+                                        <field name="purchase_order_id"/>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-12 text-end">
+                                        <strong><field name="ocr_total"/></strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="iv_action_kanban" model="ir.actions.act_window">
+        <field name="name">Finance Dashboard</field>
+        <field name="res_model">invoice.validation</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="view_ids" eval="[
+            (5,0,0),
+            (0,0,{'view_mode':'kanban','view_id':ref('iv_kanban_view')}),
+            (0,0,{'view_mode':'list','view_id':ref('iv_tree_view')}),
+            (0,0,{'view_mode':'form','view_id':ref('iv_form_view')}),
+        ]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Belum Ada Invoice</p>
+            <p>Klik <strong>New</strong> untuk upload Invoice PDF dan mulai proses validasi.</p>
+        </field>
+    </record>
+
+</odoo>

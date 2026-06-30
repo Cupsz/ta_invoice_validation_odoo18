@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_warehouse_root" name="Warehouse" sequence="20"
+              groups="warehouse.group_warehouse_user"/>
+    <menuitem id="menu_warehouse_gr" name="Goods Receipts"
+              parent="menu_warehouse_root"
+              action="warehouse_gr_action" sequence="10"
+              groups="warehouse.group_warehouse_user"/>
+</odoo>

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# VSCode (biarkan extensions.json kalau ada, tapi sembunyikan settings personal)
+.vscode/settings.json
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Odoo
+*.sqlite3
+odoo.pid
+
+# Docker volumes data (kalau ada folder lokal untuk data)
+postgresql_data/
+odoo_data_local/
+
+# Env / secrets (kalau nanti kamu pisahkan password ke file .env)
+.env

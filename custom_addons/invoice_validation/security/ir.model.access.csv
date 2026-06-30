@@ -1,0 +1,9 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_iv_user,iv.user,invoice_validation.model_invoice_validation,invoice_validation.group_invoice_validation_user,1,1,1,0
+access_iv_manager,iv.manager,invoice_validation.model_invoice_validation,invoice_validation.group_invoice_validation_manager,1,1,1,1
+access_iv_line_user,iv.line.user,invoice_validation.model_invoice_validation_line,invoice_validation.group_invoice_validation_user,1,1,1,0
+access_iv_line_manager,iv.line.manager,invoice_validation.model_invoice_validation_line,invoice_validation.group_invoice_validation_manager,1,1,1,1
+access_ocr_service,ocr.service,invoice_validation.model_ocr_service,invoice_validation.group_invoice_validation_user,1,0,0,0
+access_finance_po,finance.po,purchase.model_purchase_order,invoice_validation.group_invoice_validation_user,1,0,0,0
+access_finance_picking,finance.picking,stock.model_stock_picking,invoice_validation.group_invoice_validation_user,1,0,0,0
+access_finance_move,finance.move,stock.model_stock_move,invoice_validation.group_invoice_validation_user,1,0,0,0

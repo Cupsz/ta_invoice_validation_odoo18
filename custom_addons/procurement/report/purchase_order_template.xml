@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_po_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="row mb-3">
+                            <div class="col-7">
+                                <h2 class="mb-0">PURCHASE ORDER</h2>
+                                <h3 class="text-primary"><t t-esc="o.name"/></h3>
+                            </div>
+                            <div class="col-5 text-end">
+                                <span t-if="o.state=='draft'" class="badge bg-secondary fs-6">Draft</span>
+                                <span t-if="o.state=='purchase'" class="badge bg-success fs-6">Confirmed</span>
+                            </div>
+                        </div>
+                        <hr/>
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <strong>Vendor:</strong> <t t-esc="o.partner_id.name"/><br/>
+                                <t t-if="o.partner_id.street">
+                                    <t t-esc="o.partner_id.street"/><br/>
+                                </t>
+                                <t t-if="o.partner_id.phone">
+                                    Telp: <t t-esc="o.partner_id.phone"/>
+                                </t>
+                            </div>
+                            <div class="col-6">
+                                <strong>Order Date:</strong>
+                                <span t-field="o.date_order" t-options="{'widget':'date'}"/><br/>
+                                <strong>Expected Receipt:</strong>
+                                <span t-field="o.date_planned" t-options="{'widget':'date'}"/>
+                            </div>
+                        </div>
+                        <table class="table table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>#</th><th>Product</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-center">Unit</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="o.order_line" t-as="line">
+                                    <td><t t-esc="line_index+1"/></td>
+                                    <td><t t-esc="line.product_id.name"/></td>
+                                    <td class="text-center"><t t-esc="line.product_qty"/></td>
+                                    <td class="text-center"><t t-esc="line.product_uom.name"/></td>
+                                    <td class="text-end"><span t-field="line.price_unit"/></td>
+                                    <td class="text-end"><span t-field="line.price_subtotal"/></td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5" class="text-end"><strong>TOTAL</strong></td>
+                                    <td class="text-end"><strong><span t-field="o.amount_total"/></strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                        <div class="row mt-5">
+                            <div class="col-6 text-center">
+                                <p>Dibuat oleh,</p><br/><br/>
+                                <p>______________________</p>
+                                <p><strong>Tim Procurement</strong></p>
+                            </div>
+                            <div class="col-6 text-center">
+                                <p>Disetujui oleh,</p><br/><br/>
+                                <p>______________________</p>
+                                <p><strong>Manager</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
