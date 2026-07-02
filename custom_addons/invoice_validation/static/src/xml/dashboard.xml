@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="invoice_validation.Dashboard" owl="1">
+        <div class="ivdash-root">
+
+            <!-- ============================================== -->
+            <!-- VIEW: DASHBOARD                                  -->
+            <!-- ============================================== -->
+            <t t-if="state.view === 'dashboard'">
+                <div class="ivdash-header">
+                    <div>
+                        <h2 class="ivdash-title">Invoice Validation</h2>
+                        <div class="ivdash-subtitle">Dashboard Finance</div>
+                    </div>
+                    <button class="btn btn-primary ivdash-upload-btn" t-on-click="openUpload">
+                        <i class="fa fa-cloud-upload me-1"/> Upload Invoice
+                    </button>
+                </div>
+
+                <div class="ivdash-stats">
+                    <div class="ivdash-stat-card ivdash-stat-match" t-on-click="() => this.openFiltered('validated')">
+                        <div class="ivdash-stat-value"><t t-esc="state.match_count"/></div>
+                        <div class="ivdash-stat-label">Invoice Match</div>
+                    </div>
+                    <div class="ivdash-stat-card ivdash-stat-mismatch" t-on-click="() => this.openFiltered('mismatch')">
+                        <div class="ivdash-stat-value"><t t-esc="state.mismatch_count"/></div>
+                        <div class="ivdash-stat-label">Invoice Mismatch</div>
+                    </div>
+                    <div class="ivdash-stat-card ivdash-stat-waiting" t-on-click="() => this.openFiltered('draft')">
+                        <div class="ivdash-stat-value"><t t-esc="state.waiting_count"/></div>
+                        <div class="ivdash-stat-label">Waiting Validation</div>
+                    </div>
+                </div>
+
+                <div class="ivdash-recent">
+                    <div class="ivdash-recent-header">
+                        <span>Riwayat Validasi Terbaru</span>
+                        <a href="#" class="ivdash-see-all" t-on-click.prevent="() => this.openFiltered(false)">
+                            Lihat Semua →
+                        </a>
+                    </div>
+
+                    <div t-if="state.loading" class="ivdash-loading">Memuat data...</div>
+
+                    <table t-else="" class="ivdash-table">
+                        <thead>
+                            <tr>
+                                <th>Invoice Number</th>
+                                <th>Vendor</th>
+                                <th>PO Number</th>
+                                <th>Status</th>
+                                <th>Tanggal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-if="!state.recent.length">
+                                <td colspan="5" class="ivdash-empty">
+                                    Belum ada riwayat validasi. Klik "Upload Invoice" untuk mulai.
+                                </td>
+                            </tr>
+                            <tr t-foreach="state.recent" t-as="row" t-key="row.id"
+                                class="ivdash-row" t-on-click="() => this.openRecord(row.id)">
+                                <td><t t-esc="row.invoice_number"/></td>
+                                <td><t t-esc="row.vendor_name"/></td>
+                                <td><t t-esc="row.po_number"/></td>
+                                <td>
+                                    <span t-att-class="statusBadgeClass(row.state)">
+                                        <t t-esc="row.state_label"/>
+                                    </span>
+                                </td>
+                                <td><t t-esc="row.validated_date"/></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+
+            <!-- ============================================== -->
+            <!-- VIEW: UPLOAD INVOICE                             -->
+            <!-- ============================================== -->
+            <t t-if="state.view === 'upload'">
+                <div class="ivdash-header">
+                    <div>
+                        <h2 class="ivdash-title">Upload Invoice</h2>
+                        <div class="ivdash-subtitle">Unggah invoice PDF untuk diproses OCR</div>
+                    </div>
+                    <a href="#" class="ivdash-back-link" t-on-click.prevent="goToDashboard">
+                        <i class="fa fa-arrow-left me-1"/> Kembali ke Dashboard
+                    </a>
+                </div>
+
+                <div class="ivdash-card ivdash-upload-card">
+                    <div t-att-class="state.isDragging ? 'ivdash-dropzone ivdash-dropzone-active' : 'ivdash-dropzone'"
+                         t-on-dragover="onDragOver" t-on-dragleave="onDragLeave" t-on-drop="onDrop"
+                         t-on-click="triggerFilePicker">
+                        <i class="fa fa-cloud-upload ivdash-dropzone-icon"/>
+                        <div class="ivdash-dropzone-text">Drag &amp; drop invoice PDF here</div>
+                        <div class="ivdash-dropzone-or">atau</div>
+                        <button type="button" class="btn btn-outline-primary ivdash-choose-btn" t-on-click.stop="triggerFilePicker">
+                            Choose File
+                        </button>
+                        <input type="file" accept="application/pdf" class="ivdash-file-input"
+                               t-ref="fileInput" t-on-change="onFileChange"/>
+                    </div>
+
+                    <div class="ivdash-filename-row">
+                        <span class="ivdash-filename-label">File Name</span>
+                        <span class="ivdash-filename-value">
+                            <t t-if="state.fileName"><t t-esc="state.fileName"/></t>
+                            <t t-else="">-</t>
+                        </span>
+                        <a href="#" t-if="state.fileName" class="ivdash-clear-file" t-on-click.prevent="clearFile">
+                            <i class="fa fa-times"/>
+                        </a>
+                    </div>
+
+                    <div class="ivdash-upload-actions">
+                        <button class="btn btn-primary ivdash-action-btn"
+                                t-on-click="submitUpload" t-att-disabled="!state.fileName or state.uploading">
+                            <t t-if="state.uploading">
+                                <i class="fa fa-spinner fa-spin me-1"/>
+                                <t t-if="state.processing">Memproses OCR...</t>
+                                <t t-else="">Mengunggah...</t>
+                            </t>
+                            <t t-else="">Upload</t>
+                        </button>
+                        <button class="btn btn-light ivdash-action-btn" t-on-click="cancelUpload" t-att-disabled="state.uploading">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </t>
+
+            <!-- ============================================== -->
+            <!-- VIEW: INVOICE DETAIL (after OCR &amp; Parsing)       -->
+            <!-- ============================================== -->
+            <t t-if="state.view === 'detail' and state.detail">
+                <div class="ivdash-header">
+                    <div>
+                        <h2 class="ivdash-title">Invoice Detail (After OCR &amp; Parsing)</h2>
+                        <div class="ivdash-subtitle">Periksa hasil ekstraksi sebelum validasi</div>
+                    </div>
+                    <a href="#" class="ivdash-back-link" t-on-click.prevent="goToDashboard">
+                        <i class="fa fa-arrow-left me-1"/> Kembali ke Dashboard
+                    </a>
+                </div>
+
+                <div class="ivdash-card">
+                    <div class="ivdash-detail-grid">
+                        <div class="ivdash-detail-item">
+                            <span class="ivdash-detail-label">Invoice Number</span>
+                            <span class="ivdash-detail-value"><t t-esc="state.detail.invoice_number"/></span>
+                        </div>
+                        <div class="ivdash-detail-item">
+                            <span class="ivdash-detail-label">Vendor</span>
+                            <span class="ivdash-detail-value"><t t-esc="state.detail.vendor_name"/></span>
+                        </div>
+                        <div class="ivdash-detail-item">
+                            <span class="ivdash-detail-label">Invoice Date</span>
+                            <span class="ivdash-detail-value"><t t-esc="state.detail.invoice_date"/></span>
+                        </div>
+                        <div class="ivdash-detail-item">
+                            <span class="ivdash-detail-label">Total Invoice</span>
+                            <span class="ivdash-detail-value ivdash-detail-strong">
+                                <t t-esc="state.detail.total.toLocaleString('id-ID')"/>
+                            </span>
+                        </div>
+                        <div class="ivdash-detail-item">
+                            <span class="ivdash-detail-label">PO Number (System)</span>
+                            <span class="ivdash-detail-value"><t t-esc="state.detail.po_number"/></span>
+                        </div>
+                        <div class="ivdash-detail-item">
+                            <span class="ivdash-detail-label">Goods Receipt (System)</span>
+                            <span class="ivdash-detail-value"><t t-esc="state.detail.gr_number"/></span>
+                        </div>
+                    </div>
+
+                    <div class="ivdash-lines-header">Invoice Lines</div>
+                    <table class="ivdash-lines-table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-end">Qty (Inv)</th>
+                                <th class="text-end">Unit Price</th>
+                                <th class="text-end">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-if="!state.detail.lines.length">
+                                <td colspan="4" class="ivdash-empty">Tidak ada baris item terdeteksi.</td>
+                            </tr>
+                            <tr t-foreach="state.detail.lines" t-as="line" t-key="line.id">
+                                <td><t t-esc="line.product_name"/></td>
+                                <td class="text-end"><t t-esc="line.invoice_qty"/></td>
+                                <td class="text-end"><t t-esc="line.invoice_price.toLocaleString('id-ID')"/></td>
+                                <td class="text-end"><t t-esc="line.invoice_subtotal.toLocaleString('id-ID')"/></td>
+                            </tr>
+                        </tbody>
+                        <tfoot t-if="state.detail.lines.length">
+                            <tr>
+                                <td colspan="3" class="text-end ivdash-total-label">Total</td>
+                                <td class="text-end ivdash-total-value"><t t-esc="state.detail.total.toLocaleString('id-ID')"/></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div class="ivdash-upload-actions">
+                        <button class="btn btn-success ivdash-action-btn"
+                                t-on-click="runValidate" t-att-disabled="state.processing">
+                            <t t-if="state.processing">
+                                <i class="fa fa-spinner fa-spin me-1"/> Memvalidasi...
+                            </t>
+                            <t t-else="">
+                                <i class="fa fa-check me-1"/> Validate
+                            </t>
+                        </button>
+                    </div>
+                </div>
+            </t>
+
+            <!-- ============================================== -->
+            <!-- VIEW: VALIDATION RESULT                          -->
+            <!-- ============================================== -->
+            <t t-if="state.view === 'result' and state.detail">
+                <div class="ivdash-header">
+                    <div>
+                        <h2 class="ivdash-title">Validation Result</h2>
+                        <div class="ivdash-subtitle">Hasil Three-Way Matching — <t t-esc="state.detail.name"/></div>
+                    </div>
+                    <a href="#" class="ivdash-back-link" t-on-click.prevent="goToDashboard">
+                        <i class="fa fa-arrow-left me-1"/> Kembali ke Dashboard
+                    </a>
+                </div>
+
+                <div class="ivdash-card ivdash-result-card-wide">
+
+                    <!-- Status besar di atas -->
+                    <div class="ivdash-result-status">
+                        <span class="ivdash-result-status-label">Status Keseluruhan</span>
+                        <span t-att-class="statusBadgeClass(state.detail.state) + ' ivdash-result-badge'">
+                            <t t-esc="state.detail.state_label"/>
+                        </span>
+                    </div>
+
+                    <!-- Perbandingan Header: Invoice vs PO (Sistem) -->
+                    <div class="ivdash-lines-header">Perbandingan Dokumen (Header)</div>
+                    <table class="ivdash-compare-table">
+                        <thead>
+                            <tr>
+                                <th>Field</th>
+                                <th>Invoice (OCR)</th>
+                                <th>Purchase Order (Sistem)</th>
+                                <th class="text-center">Cocok?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-att-class="!state.detail.match_vendor ? 'ivdash-row-bad' : ''">
+                                <td class="ivdash-compare-label">Vendor</td>
+                                <td><t t-esc="state.detail.vendor_name"/></td>
+                                <td><t t-esc="state.detail.po_vendor_name"/></td>
+                                <td class="text-center">
+                                    <i t-att-class="state.detail.match_vendor ? 'fa fa-check-circle ivdash-check-ok' : 'fa fa-times-circle ivdash-check-bad'"/>
+                                </td>
+                            </tr>
+                            <tr t-att-class="!state.detail.match_po ? 'ivdash-row-bad' : ''">
+                                <td class="ivdash-compare-label">PO Number</td>
+                                <td><t t-esc="state.detail.po_number_ocr"/></td>
+                                <td><t t-esc="state.detail.po_number"/></td>
+                                <td class="text-center">
+                                    <i t-att-class="state.detail.match_po ? 'fa fa-check-circle ivdash-check-ok' : 'fa fa-times-circle ivdash-check-bad'"/>
+                                </td>
+                            </tr>
+                            <tr t-att-class="!state.detail.match_total ? 'ivdash-row-bad' : ''">
+                                <td class="ivdash-compare-label">Total</td>
+                                <td><t t-esc="state.detail.total.toLocaleString('id-ID')"/></td>
+                                <td><t t-esc="state.detail.po_total.toLocaleString('id-ID')"/></td>
+                                <td class="text-center">
+                                    <i t-att-class="state.detail.match_total ? 'fa fa-check-circle ivdash-check-ok' : 'fa fa-times-circle ivdash-check-bad'"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Perbandingan Line Item: Invoice vs PO vs GR -->
+                    <div class="ivdash-lines-header">Perbandingan Item — Invoice vs PO vs Goods Receipt</div>
+                    <div class="ivdash-compare-scroll">
+                        <table class="ivdash-compare-table ivdash-compare-lines">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">Product</th>
+                                    <th colspan="3" class="text-center ivdash-group-qty">Quantity</th>
+                                    <th colspan="2" class="text-center ivdash-group-price">Unit Price</th>
+                                    <th rowspan="2" class="text-center">Status</th>
+                                </tr>
+                                <tr>
+                                    <th class="text-end ivdash-group-qty">Invoice</th>
+                                    <th class="text-end ivdash-group-qty">PO</th>
+                                    <th class="text-end ivdash-group-qty">GR</th>
+                                    <th class="text-end ivdash-group-price">Invoice</th>
+                                    <th class="text-end ivdash-group-price">PO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-if="!state.detail.lines.length">
+                                    <td colspan="7" class="ivdash-empty">Tidak ada baris item.</td>
+                                </tr>
+                                <tr t-foreach="state.detail.lines" t-as="line" t-key="line.id"
+                                    t-att-class="line.match_status === 'mismatch' ? 'ivdash-row-bad' : ''">
+                                    <td><t t-esc="line.product_name"/></td>
+                                    <td class="text-end" t-att-class="!line.match_qty ? 'ivdash-cell-bad' : ''">
+                                        <t t-esc="line.invoice_qty"/>
+                                    </td>
+                                    <td class="text-end"><t t-esc="line.po_qty"/></td>
+                                    <td class="text-end"><t t-esc="line.gr_qty"/></td>
+                                    <td class="text-end" t-att-class="!line.match_price ? 'ivdash-cell-bad' : ''">
+                                        <t t-esc="line.invoice_price.toLocaleString('id-ID')"/>
+                                    </td>
+                                    <td class="text-end"><t t-esc="line.po_price.toLocaleString('id-ID')"/></td>
+                                    <td class="text-center">
+                                        <span t-att-class="line.match_status === 'match' ? 'ivdash-badge ivdash-badge-match' : (line.match_status === 'mismatch' ? 'ivdash-badge ivdash-badge-mismatch' : 'ivdash-badge ivdash-badge-waiting')">
+                                            <t t-if="line.match_status === 'match'">Match</t>
+                                            <t t-elif="line.match_status === 'mismatch'">Mismatch</t>
+                                            <t t-else="">Pending</t>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="ivdash-legend">
+                        <span class="ivdash-legend-dot ivdash-legend-bad"/> sel merah = sumber ketidakcocokan antar dokumen
+                    </div>
+
+                    <div t-if="state.detail.mismatch_notes" class="ivdash-notes">
+                        <div class="ivdash-notes-title">Catatan Detail</div>
+                        <pre class="ivdash-notes-body"><t t-esc="state.detail.mismatch_notes"/></pre>
+                    </div>
+
+                    <div class="ivdash-upload-actions">
+                        <button class="btn btn-primary ivdash-action-btn" t-on-click="viewFullRecord">
+                            Lihat Detail Lengkap
+                        </button>
+                        <button class="btn btn-light ivdash-action-btn" t-on-click="finishAndReturn">
+                            Selesai
+                        </button>
+                    </div>
+                </div>
+            </t>
+
+        </div>
+    </t>
+
+</templates>

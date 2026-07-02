@@ -8,6 +8,12 @@ from odoo import models, api
 
 _logger = logging.getLogger(__name__)
 
+HEADER_LABELS = {
+    'product', 'produk', 'qty', 'quantity', 'jumlah', 'unit', 'unit price',
+    'harga', 'harga satuan', 'subtotal', 'sub total', 'total', '#', 'no',
+    'item', 'nama produk', 'nama barang',
+}
+
 
 class OcrService(models.AbstractModel):
     _name = 'ocr.service'
@@ -55,6 +61,44 @@ class OcrService(models.AbstractModel):
             _logger.error("pytesseract OCR failed: %s", e)
             raise
 
+    # ----------------------------------------------------------------
+    # Number parsing
+    # ----------------------------------------------------------------
+    @staticmethod
+    def _parse_number(token):
+        """
+        Parse a numeric string yang formatnya bisa bermacam-macam:
+          - '10.00'          -> 10.0      (titik = desimal, gaya default Odoo/Inggris)
+          - '100,50'         -> 100.5     (koma = desimal)
+          - '45.000'         -> 45000.0   (titik = pemisah ribuan, gaya Indonesia)
+          - '1.234.567,89'   -> 1234567.89 (gabungan gaya Indonesia)
+          - '1500'           -> 1500.0
+        Heuristik: kalau hanya ada SATU titik dan digit di belakangnya
+        cuma 1-2 angka, dianggap titik desimal. Kalau lebih dari itu
+        (atau ada banyak titik), dianggap pemisah ribuan.
+        """
+        if token is None:
+            return None
+        token = re.sub(r'(?i)^\s*(rp\.?|idr)\s*', '', token.strip()).strip()
+        if not token or not re.fullmatch(r'[\d.,]+', token):
+            return None
+
+        has_comma = ',' in token
+        has_dot = '.' in token
+        try:
+            if has_comma and has_dot:
+                return float(token.replace('.', '').replace(',', '.'))
+            if has_comma and not has_dot:
+                return float(token.replace(',', '.'))
+            if has_dot and not has_comma:
+                parts = token.split('.')
+                if len(parts) == 2 and len(parts[1]) <= 2:
+                    return float(token)
+                return float(token.replace('.', ''))
+            return float(token)
+        except ValueError:
+            return None
+
     def _parse_invoice_text(self, text):
         result = {
             'invoice_number': '', 'vendor_name': '', 'invoice_date': '',
@@ -101,42 +145,96 @@ class OcrService(models.AbstractModel):
                 result['po_number'] = m.group(1).strip() if m.lastindex else m.group(0).strip()
                 break
 
+        # IMPORTANT: pakai \b di depan 'total' supaya tidak ke-trigger
+        # oleh kata 'Subtotal' (header kolom tabel) yang muncul lebih dulu.
         for pattern in [
-            r'(?i)(?:grand\s*)?total[:\s]*(?:Rp\.?|IDR)?\s*([\d.,]+)',
-            r'(?i)jumlah[:\s]*(?:Rp\.?|IDR)?\s*([\d.,]+)',
+            r'(?i)\b(?:grand\s*)?total\b[:\s]*(?:Rp\.?|IDR)?\s*([\d.,]+)',
+            r'(?i)\bjumlah\b[:\s]*(?:Rp\.?|IDR)?\s*([\d.,]+)',
         ]:
             m = re.search(pattern, text)
             if m:
-                total_str = m.group(1).replace('.', '').replace(',', '.')
-                try:
-                    result['total'] = float(total_str)
-                except ValueError:
-                    pass
+                parsed = self._parse_number(m.group(1))
+                if parsed is not None:
+                    result['total'] = parsed
                 break
 
         result['lines'] = self._parse_line_items(text)
         return result
 
     def _parse_line_items(self, text):
-        lines = []
-        pattern = r'([A-Za-z][^\d\n]{2,40})\s+(\d+(?:[.,]\d+)?)\s+(?:[A-Za-z]+\s+)?([\d.,]+(?:\.\d{2})?)'
-        skip_keywords = ['total', 'subtotal', 'tax', 'pajak', 'discount',
-                         'grand', 'payment', 'invoice', 'purchase', 'date',
-                         'vendor', 'address', 'phone']
+        """
+        Parser baris item berbasis 'penanda nomor urut baris' (1, 2, 3, ...)
+        yang biasanya muncul sebagai baris tersendiri pada hasil ekstraksi
+        PDF tabel (tiap sel jadi baris sendiri). Jauh lebih tahan banting
+        dibanding satu regex raksasa karena tidak terganggu oleh kata-kata
+        header tabel seperti 'Product', 'Qty', 'Subtotal', dsb.
+        """
+        raw_lines = [l.strip() for l in text.split('\n') if l.strip()]
+        n = len(raw_lines)
+        unit_words = {
+            'units', 'unit', 'pcs', 'pc', 'box', 'dus', 'buah',
+            'kg', 'gram', 'liter', 'ltr', 'set', 'lembar', 'roll',
+        }
 
-        for m in re.finditer(pattern, text):
-            product_name = m.group(1).strip()
-            qty_str = m.group(2).replace(',', '.')
-            price_str = m.group(3).replace('.', '').replace(',', '.')
+        # Cari posisi baris yang berisi PERSIS '1', '2', '3', ... berurutan
+        # -> ini penanda kolom '#' / nomor item.
+        # Supaya tidak ketipu oleh nilai qty yang KEBETULAN sama dengan
+        # nomor urut baris (mis. baris ke-2 qty-nya juga "2"), penanda baru
+        # dianggap valid kalau baris SETELAHNYA adalah teks nama produk
+        # (bukan angka, bukan header, bukan kata satuan seperti 'Units').
+        row_starts = []
+        expected = 1
+        for idx, l in enumerate(raw_lines):
+            if l != str(expected):
+                continue
+            nxt = raw_lines[idx + 1] if idx + 1 < n else ''
+            if not nxt or nxt.lower() in HEADER_LABELS or nxt.lower() in unit_words:
+                continue
+            if self._parse_number(nxt) is not None:
+                continue
+            if not re.search(r'[A-Za-z]', nxt):
+                continue
+            row_starts.append(idx)
+            expected += 1
 
-            if any(kw in product_name.lower() for kw in skip_keywords):
+        if not row_starts:
+            return []
+
+        items = []
+        for k, start in enumerate(row_starts):
+            if k + 1 < len(row_starts):
+                block = raw_lines[start + 1:row_starts[k + 1]]
+            else:
+                # baris terakhir: ambil beberapa baris ke depan,
+                # berhenti begitu ketemu 'TOTAL' / 'GRAND TOTAL' persis
+                lookahead = raw_lines[start + 1:start + 1 + 10]
+                block = []
+                for l in lookahead:
+                    if re.fullmatch(r'(?i)(grand\s*)?total', l):
+                        break
+                    block.append(l)
+
+            product_name = None
+            numeric_tokens = []
+            for l in block:
+                if l.lower() in HEADER_LABELS:
+                    continue
+                num = self._parse_number(l)
+                if num is not None:
+                    numeric_tokens.append(num)
+                elif product_name is None and re.search(r'[A-Za-z]', l):
+                    product_name = l
+
+            if not product_name or not numeric_tokens:
                 continue
-            try:
-                lines.append({
-                    'product': product_name,
-                    'qty': float(qty_str),
-                    'price': float(price_str) if price_str else 0.0,
-                })
-            except ValueError:
-                continue
-        return lines
+
+            qty = numeric_tokens[0]
+            price = numeric_tokens[1] if len(numeric_tokens) >= 2 else 0.0
+
+            items.append({
+                'product': product_name,
+                'qty': qty,
+                'price': price,
+            })
+
+        return items

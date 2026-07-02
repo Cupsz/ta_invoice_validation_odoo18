@@ -1,0 +1,595 @@
+/* ============================================================
+   Invoice Validation — Finance Dashboard
+   Palette: deep indigo brand, semantic status colors
+   ============================================================ */
+
+.ivdash-root {
+    padding: 24px 32px;
+    background: #F7F7FB;
+    min-height: 100%;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.ivdash-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.ivdash-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #2B2250;
+    margin: 0;
+}
+
+.ivdash-subtitle {
+    font-size: 13px;
+    color: #8B86A8;
+    margin-top: 2px;
+}
+
+.ivdash-upload-btn {
+    background: #4B3F8F;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 13px;
+    box-shadow: 0 2px 6px rgba(75, 63, 143, 0.25);
+}
+
+.ivdash-upload-btn:hover {
+    background: #3A2F75;
+}
+
+/* Stat cards */
+.ivdash-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.ivdash-stat-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px 24px;
+    cursor: pointer;
+    border-left: 5px solid transparent;
+    box-shadow: 0 1px 3px rgba(20, 15, 60, 0.06);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.ivdash-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(20, 15, 60, 0.10);
+}
+
+.ivdash-stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.ivdash-stat-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6B6588;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.ivdash-stat-match {
+    border-left-color: #2FA86A;
+}
+.ivdash-stat-match .ivdash-stat-value {
+    color: #2FA86A;
+}
+
+.ivdash-stat-mismatch {
+    border-left-color: #E4574C;
+}
+.ivdash-stat-mismatch .ivdash-stat-value {
+    color: #E4574C;
+}
+
+.ivdash-stat-waiting {
+    border-left-color: #E3A33B;
+}
+.ivdash-stat-waiting .ivdash-stat-value {
+    color: #E3A33B;
+}
+
+/* Recent table */
+.ivdash-recent {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(20, 15, 60, 0.06);
+    overflow: hidden;
+}
+
+.ivdash-recent-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid #EFEDF7;
+    font-weight: 700;
+    color: #2B2250;
+    font-size: 15px;
+}
+
+.ivdash-see-all {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4B3F8F;
+    text-decoration: none;
+}
+.ivdash-see-all:hover {
+    text-decoration: underline;
+}
+
+.ivdash-loading,
+.ivdash-empty {
+    padding: 32px 24px;
+    text-align: center;
+    color: #9B96B8;
+    font-size: 13px;
+}
+
+.ivdash-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.ivdash-table thead th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #9B96B8;
+    font-weight: 700;
+    padding: 10px 24px;
+    background: #FAFAFD;
+    border-bottom: 1px solid #EFEDF7;
+}
+
+.ivdash-row {
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+
+.ivdash-row:hover {
+    background: #F7F6FC;
+}
+
+.ivdash-row td {
+    padding: 13px 24px;
+    font-size: 13px;
+    color: #3A3560;
+    border-bottom: 1px solid #F3F2FA;
+}
+
+/* Status badges */
+.ivdash-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.ivdash-badge-match {
+    background: #E4F7EC;
+    color: #1F8A53;
+}
+
+.ivdash-badge-mismatch {
+    background: #FCEAE8;
+    color: #C73D32;
+}
+
+.ivdash-badge-waiting {
+    background: #FCF1DE;
+    color: #B17D1F;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .ivdash-stats {
+        grid-template-columns: 1fr;
+    }
+    .ivdash-root {
+        padding: 16px;
+    }
+}
+
+/* ============================================================
+   Back link (sub-screens)
+   ============================================================ */
+.ivdash-back-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4B3F8F;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.ivdash-back-link:hover {
+    text-decoration: underline;
+}
+
+/* ============================================================
+   Generic card used by upload / detail / result screens
+   ============================================================ */
+.ivdash-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(20, 15, 60, 0.06);
+    padding: 28px 32px;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+/* ============================================================
+   Upload screen
+   ============================================================ */
+.ivdash-dropzone {
+    border: 2px dashed #CFC9E8;
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    background: #FAFAFD;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    position: relative;
+}
+
+.ivdash-dropzone:hover,
+.ivdash-dropzone-active {
+    border-color: #4B3F8F;
+    background: #F2F0FB;
+}
+
+.ivdash-dropzone-icon {
+    font-size: 36px;
+    color: #4B3F8F;
+    margin-bottom: 12px;
+}
+
+.ivdash-dropzone-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: #2B2250;
+}
+
+.ivdash-dropzone-or {
+    font-size: 12px;
+    color: #9B96B8;
+    margin: 10px 0;
+}
+
+.ivdash-choose-btn {
+    border-color: #4B3F8F;
+    color: #4B3F8F;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 6px 18px;
+}
+.ivdash-choose-btn:hover {
+    background: #4B3F8F;
+    color: #fff;
+}
+
+.ivdash-file-input {
+    display: none;
+}
+
+.ivdash-filename-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 18px;
+    padding: 10px 14px;
+    background: #FAFAFD;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.ivdash-filename-label {
+    color: #9B96B8;
+    font-weight: 600;
+}
+
+.ivdash-filename-value {
+    color: #2B2250;
+    font-weight: 600;
+    flex: 1;
+}
+
+.ivdash-clear-file {
+    color: #C73D32;
+    text-decoration: none;
+}
+
+.ivdash-upload-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.ivdash-action-btn {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 9px 22px;
+}
+
+/* ============================================================
+   Invoice detail screen
+   ============================================================ */
+.ivdash-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 32px;
+    margin-bottom: 24px;
+}
+
+.ivdash-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ivdash-detail-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #9B96B8;
+    font-weight: 700;
+}
+
+.ivdash-detail-value {
+    font-size: 14px;
+    color: #2B2250;
+    font-weight: 600;
+}
+
+.ivdash-detail-strong {
+    color: #4B3F8F;
+    font-size: 16px;
+}
+
+.ivdash-lines-header {
+    font-size: 13px;
+    font-weight: 700;
+    color: #2B2250;
+    margin: 8px 0 10px;
+    padding-top: 16px;
+    border-top: 1px solid #EFEDF7;
+}
+
+.ivdash-lines-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.ivdash-lines-table thead th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #9B96B8;
+    font-weight: 700;
+    padding: 8px 6px;
+    border-bottom: 1px solid #EFEDF7;
+}
+
+.ivdash-lines-table tbody td {
+    padding: 8px 6px;
+    color: #3A3560;
+    border-bottom: 1px solid #F3F2FA;
+}
+
+.ivdash-lines-table tfoot td {
+    padding: 10px 6px 0;
+}
+
+.ivdash-total-label {
+    font-weight: 700;
+    color: #2B2250;
+}
+
+.ivdash-total-value {
+    font-weight: 800;
+    color: #4B3F8F;
+    font-size: 15px;
+}
+
+.text-end {
+    text-align: right;
+}
+
+/* ============================================================
+   Validation result screen
+   ============================================================ */
+.ivdash-result-card {
+    max-width: 480px;
+}
+
+.ivdash-checklist {
+    list-style: none;
+    margin: 0 0 20px;
+    padding: 0;
+}
+
+.ivdash-checklist li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 4px;
+    border-bottom: 1px solid #F3F2FA;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2B2250;
+}
+
+.ivdash-checklist li:last-child {
+    border-bottom: none;
+}
+
+.ivdash-check-ok {
+    color: #2FA86A;
+    font-size: 18px;
+}
+
+.ivdash-check-bad {
+    color: #E4574C;
+    font-size: 18px;
+}
+
+.ivdash-result-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #FAFAFD;
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+}
+
+.ivdash-result-status-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #6B6588;
+    text-transform: uppercase;
+}
+
+.ivdash-result-badge {
+    font-size: 13px;
+    padding: 5px 14px;
+}
+
+.ivdash-notes {
+    margin-top: 16px;
+}
+
+.ivdash-notes-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #9B96B8;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.ivdash-notes-body {
+    background: #FCEAE8;
+    color: #C73D32;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 12px;
+    white-space: pre-wrap;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .ivdash-detail-grid {
+        grid-template-columns: 1fr;
+    }
+    .ivdash-card {
+        padding: 20px;
+    }
+}
+
+/* ============================================================
+   Validation Result — full 3-way comparison table
+   ============================================================ */
+.ivdash-result-card-wide {
+    max-width: 920px;
+}
+
+.ivdash-compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 24px;
+}
+
+.ivdash-compare-table thead th {
+    background: #F2F0FB;
+    color: #4B3F8F;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    font-weight: 700;
+    padding: 8px 10px;
+    border: 1px solid #E5E2F2;
+}
+
+.ivdash-compare-table tbody td {
+    padding: 9px 10px;
+    border: 1px solid #EFEDF7;
+    color: #3A3560;
+}
+
+.ivdash-compare-label {
+    font-weight: 700;
+    color: #2B2250;
+    background: #FAFAFD;
+}
+
+.ivdash-group-qty {
+    background: #F5F8FF;
+}
+
+.ivdash-group-price {
+    background: #FFF8F0;
+}
+
+.ivdash-compare-scroll {
+    overflow-x: auto;
+}
+
+.ivdash-compare-lines {
+    min-width: 640px;
+}
+
+/* Baris yang mengandung ketidakcocokan disorot merah tipis */
+.ivdash-row-bad {
+    background: #FDF2F1;
+}
+
+/* Sel spesifik yang jadi biang mismatch disorot lebih tegas */
+.ivdash-cell-bad {
+    background: #FBDFDC !important;
+    color: #C73D32 !important;
+    font-weight: 700;
+    border-radius: 4px;
+}
+
+.ivdash-legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #9B96B8;
+    margin-bottom: 18px;
+}
+
+.ivdash-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.ivdash-legend-bad {
+    background: #FBDFDC;
+    border: 1px solid #E4574C;
+}

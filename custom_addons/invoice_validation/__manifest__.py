@@ -17,6 +17,9 @@
     'assets': {
         'web.assets_backend': [
             'invoice_validation/static/src/css/invoice_validation.css',
+            'invoice_validation/static/src/css/dashboard.css',
+            'invoice_validation/static/src/js/dashboard.js',
+            'invoice_validation/static/src/xml/dashboard.xml',
         ],
     },
     'installable': True,

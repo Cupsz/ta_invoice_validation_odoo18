@@ -40,8 +40,8 @@
                             <field name="move_ids" readonly="state == 'done'">
                                 <list editable="bottom">
                                     <field name="product_id" string="Product" readonly="1"/>
-                                    <field name="product_uom_qty" string="Qty Ordered" readonly="1"/>
-                                    <field name="quantity" string="Qty Received"/>
+                                    <field name="product_uom_qty" string="Qty Ordered" widget="qty_flexible" readonly="1"/>
+                                    <field name="quantity" string="Qty Received" widget="qty_flexible"/>
                                     <field name="product_uom" string="Unit" readonly="1"/>
                                     <field name="state" column_invisible="1"/>
                                     <field name="picking_id" column_invisible="1"/>

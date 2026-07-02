@@ -73,4 +73,14 @@
         </field>
     </record>
 
+    <!-- ============================================================
+         Finance Dashboard (custom OWL widget)
+         Menampilkan stat cards Match/Mismatch/Waiting + riwayat terbaru
+         dalam satu layar, sesuai mockup desain TA.
+    ============================================================ -->
+    <record id="iv_action_dashboard" model="ir.actions.client">
+        <field name="name">Finance Dashboard</field>
+        <field name="tag">invoice_validation.dashboard</field>
+    </record>
+
 </odoo>

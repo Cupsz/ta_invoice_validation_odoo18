@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields
+from odoo import models, fields, api
 
 
 class InvoiceValidationLine(models.Model):
@@ -31,10 +31,19 @@ class InvoiceValidationLine(models.Model):
 
     TOLERANCE_PCT = 0.01
 
+    @api.depends('invoice_qty', 'invoice_price')
     def _compute_invoice_subtotal(self):
         for rec in self:
             rec.invoice_subtotal = rec.invoice_qty * rec.invoice_price
 
+    # PENTING: @api.depends wajib ada di sini. Baris invoice dibuat oleh
+    # action_run_ocr() SEBELUM po_qty/po_price/gr_qty terisi (masih 0),
+    # sehingga match_qty/match_price pertama kali dihitung saat data PO/GR
+    # belum ada. Tanpa @api.depends, field 'store=True' ini TIDAK akan
+    # dihitung ulang setelah po_qty/po_price/gr_qty di-set belakangan oleh
+    # _find_purchase_order()/_find_goods_receipt() -> hasilnya nyangkut
+    # (stale) di False walau nilai invoice vs PO sebenarnya sudah cocok.
+    @api.depends('invoice_qty', 'invoice_price', 'po_qty', 'po_price', 'gr_qty')
     def _compute_line_match(self):
         for rec in self:
             if rec.po_qty == 0 and rec.po_price == 0:

@@ -46,8 +46,8 @@
                                 <tr t-foreach="o.move_ids" t-as="move">
                                     <td><t t-esc="move_index+1"/></td>
                                     <td><t t-esc="move.product_id.name"/></td>
-                                    <td class="text-center"><t t-esc="move.product_uom_qty"/></td>
-                                    <td class="text-center"><t t-esc="move.quantity"/></td>
+                                    <td class="text-center"><t t-esc="'%g' % move.product_uom_qty"/></td>
+                                    <td class="text-center"><t t-esc="'%g' % move.quantity"/></td>
                                     <td class="text-center"><t t-esc="move.product_uom.name"/></td>
                                 </tr>
                             </tbody>

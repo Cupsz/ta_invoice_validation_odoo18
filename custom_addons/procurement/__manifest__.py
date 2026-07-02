@@ -14,6 +14,11 @@
         'report/purchase_order_report.xml',
         'report/purchase_order_template.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'procurement/static/src/js/qty_flexible_field.js',
+        ],
+    },
     'installable': True,
     'application': True,
     'license': 'LGPL-3',
