@@ -4,22 +4,10 @@
               groups="invoice_validation.group_invoice_validation_user"/>
 
     <menuitem id="menu_iv_dashboard" name="Dashboard"
-              parent="menu_iv_root" action="iv_action_kanban" sequence="10"
+              parent="menu_iv_root" action="iv_action_dashboard" sequence="10"
               groups="invoice_validation.group_invoice_validation_user"/>
 
-    <menuitem id="menu_iv_all" name="Semua Validasi"
+    <menuitem id="menu_iv_reports" name="Reports"
               parent="menu_iv_root" action="iv_action_all" sequence="20"
-              groups="invoice_validation.group_invoice_validation_user"/>
-
-    <menuitem id="menu_iv_waiting" name="Waiting Validation"
-              parent="menu_iv_root" action="iv_action_waiting" sequence="30"
-              groups="invoice_validation.group_invoice_validation_user"/>
-
-    <menuitem id="menu_iv_match" name="Invoice Match"
-              parent="menu_iv_root" action="iv_action_match" sequence="40"
-              groups="invoice_validation.group_invoice_validation_user"/>
-
-    <menuitem id="menu_iv_mismatch" name="Invoice Mismatch"
-              parent="menu_iv_root" action="iv_action_mismatch" sequence="50"
               groups="invoice_validation.group_invoice_validation_user"/>
 </odoo>

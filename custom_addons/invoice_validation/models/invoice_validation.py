@@ -85,6 +85,91 @@ class InvoiceValidation(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('invoice.validation') or 'IV/NEW'
         return super().create(vals_list)
 
+    @api.model
+    def get_dashboard_data(self):
+        """
+        Kumpulkan data ringkasan untuk Finance Dashboard:
+        - jumlah Match / Mismatch / Waiting
+        - 10 riwayat validasi terbaru
+        Dipanggil dari widget dashboard (OWL) di frontend.
+        """
+        match_count = self.search_count([('state', '=', 'validated')])
+        mismatch_count = self.search_count([('state', '=', 'mismatch')])
+        waiting_count = self.search_count([('state', '=', 'draft')])
+
+        recent = self.search([], limit=10, order='create_date desc')
+        recent_data = []
+        for rec in recent:
+            recent_data.append({
+                'id': rec.id,
+                'name': rec.name,
+                'invoice_number': rec.ocr_invoice_number or '-',
+                'vendor_name': rec.ocr_vendor_name or '-',
+                'po_number': rec.purchase_order_id.name or '-',
+                'state': rec.state,
+                'state_label': dict(rec._fields['state'].selection).get(rec.state, rec.state),
+                'validated_date': rec.validated_date.strftime('%d/%m/%Y') if rec.validated_date else (
+                    rec.create_date.strftime('%d/%m/%Y') if rec.create_date else '-'
+                ),
+            })
+
+        return {
+            'match_count': match_count,
+            'mismatch_count': mismatch_count,
+            'waiting_count': waiting_count,
+            'recent': recent_data,
+        }
+
+    @api.model
+    def get_validation_detail(self, validation_id):
+        """
+        Data lengkap satu invoice (header + line items + hasil matching)
+        untuk ditampilkan di layar 'Invoice Detail' dan 'Validation Result'
+        pada dashboard OWL.
+        """
+        rec = self.browse(validation_id)
+        if not rec.exists():
+            return {}
+
+        lines = []
+        for line in rec.line_ids:
+            lines.append({
+                'id': line.id,
+                'product_name': line.product_name,
+                'invoice_qty': line.invoice_qty,
+                'invoice_price': line.invoice_price,
+                'invoice_subtotal': line.invoice_subtotal,
+                'po_qty': line.po_qty,
+                'po_price': line.po_price,
+                'gr_qty': line.gr_qty,
+                'match_qty': line.match_qty,
+                'match_price': line.match_price,
+                'match_status': line.match_status,
+            })
+
+        return {
+            'id': rec.id,
+            'name': rec.name,
+            'state': rec.state,
+            'state_label': dict(rec._fields['state'].selection).get(rec.state, rec.state),
+            'invoice_number': rec.ocr_invoice_number or '-',
+            'vendor_name': rec.ocr_vendor_name or '-',
+            'po_vendor_name': rec.purchase_order_id.partner_id.name or '-',
+            'invoice_date': rec.ocr_invoice_date or '-',
+            'po_number_ocr': rec.ocr_po_number or '-',
+            'po_number': rec.purchase_order_id.name or '-',
+            'gr_number': rec.stock_picking_id.name or '-',
+            'total': rec.ocr_total,
+            'po_total': rec.purchase_order_id.amount_total,
+            'lines': lines,
+            'match_vendor': rec.match_vendor,
+            'match_po': rec.match_po,
+            'match_qty': rec.match_qty,
+            'match_price': rec.match_price,
+            'match_total': rec.match_total,
+            'mismatch_notes': rec.mismatch_notes or '',
+        }
+
     def action_run_ocr(self):
         self.ensure_one()
         if not self.invoice_file:

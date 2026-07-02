@@ -35,17 +35,18 @@
                                 <list editable="bottom">
                                     <field name="product_id" string="Product"
                                            options="{'no_quick_create': True}"/>
-                                    <field name="product_qty" string="Quantity"/>
-                                    <field name="product_uom" string="Unit" groups="uom.group_uom"/>
-                                    <field name="price_unit" string="Unit Price"/>
-                                    <field name="price_subtotal" string="Subtotal" readonly="1"/>
+                                    <field name="product_qty" string="Quantity" widget="qty_flexible"/>
+                                    <field name="product_uom" string="Unit"/>
+                                    <field name="price_unit" string="Unit Price" widget="monetary"/>
+                                    <field name="price_subtotal" string="Subtotal" widget="monetary" readonly="1"/>
+                                    <field name="currency_id" column_invisible="1"/>
                                     <field name="taxes_id" column_invisible="1"/>
                                     <field name="date_planned" column_invisible="1"/>
                                     <field name="company_id" column_invisible="1"/>
                                 </list>
                             </field>
                             <group class="oe_subtotal_footer">
-                                <field name="amount_total" string="Total" readonly="1"/>
+                                <field name="amount_total" string="Total" widget="monetary" readonly="1"/>
                             </group>
                         </page>
                     </notebook>
