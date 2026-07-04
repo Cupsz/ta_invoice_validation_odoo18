@@ -37,6 +37,22 @@ class InvoiceValidation(models.Model):
     stock_picking_id = fields.Many2one('stock.picking', string='Goods Receipt')
 
     line_ids = fields.One2many('invoice.validation.line', 'validation_id', string='Invoice Lines')
+    audit_log_ids = fields.One2many(
+        'invoice.validation.audit.log', 'validation_id', string='Audit Log',
+    )
+    exception_ids = fields.One2many(
+        'invoice.exception', 'validation_id', string='Exceptions',
+    )
+    has_open_exception = fields.Boolean(
+        string='Ada Exception Aktif', compute='_compute_has_open_exception', store=True,
+    )
+
+    @api.depends('exception_ids.state')
+    def _compute_has_open_exception(self):
+        for rec in self:
+            rec.has_open_exception = bool(rec.exception_ids.filtered(
+                lambda e: e.state in ('open', 'in_progress', 'escalated')
+            ))
 
     match_vendor = fields.Boolean(string='Vendor Match', readonly=True)
     match_po = fields.Boolean(string='PO Match', readonly=True)
@@ -83,7 +99,82 @@ class InvoiceValidation(models.Model):
         for vals in vals_list:
             if vals.get('name', 'New') == 'New':
                 vals['name'] = self.env['ir.sequence'].next_by_code('invoice.validation') or 'IV/NEW'
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        for rec in records:
+            rec._log_audit(
+                'upload',
+                state_before=False,
+                state_after=rec.state,
+                description=_('Invoice diupload (%s).') % (rec.invoice_filename or rec.name),
+            )
+        return records
+
+    def _log_audit(self, action_type, state_before, state_after, description):
+        """Catat satu entri audit log untuk record ini.
+        Dipanggil di setiap aksi utama (upload, OCR, validate, reset,
+        cancel) sehingga tersedia jejak who/what/when + status
+        sebelum-sesudah untuk keperluan audit dan kepatuhan.
+        """
+        self.ensure_one()
+        self.env['invoice.validation.audit.log'].sudo().create({
+            'validation_id': self.id,
+            'user_id': self.env.user.id,
+            'action_type': action_type,
+            'state_before': state_before,
+            'state_after': state_after,
+            'description': description,
+        })
+
+    def _route_to_exception_queue(self, notes, checks):
+        """FR-07: Faktur yang gagal validasi harus dialihkan ke antrian
+        pengecualian. Dipanggil otomatis dari action_validate() saat hasil
+        matching = mismatch. Kalau sudah ada exception aktif untuk invoice
+        ini, tidak dibuat duplikat - cukup dianggap masih dalam
+        penanganan yang sama.
+        """
+        self.ensure_one()
+        active_exception = self.exception_ids.filtered(
+            lambda e: e.state in ('open', 'in_progress', 'escalated')
+        )
+        if active_exception:
+            return active_exception
+
+        failed_categories = [label for label, ok in checks.items() if not ok]
+        error_report_html = '<ul>' + ''.join(f'<li>{n}</li>' for n in notes) + '</ul>'
+
+        exception = self.env['invoice.exception'].create({
+            'validation_id': self.id,
+            'error_categories': ', '.join(failed_categories) if failed_categories else 'Lainnya',
+            'error_report': error_report_html,
+            'priority': 'high' if len(failed_categories) >= 3 else 'normal',
+        })
+
+        self._log_audit(
+            'exception_create', state_before='mismatch', state_after='mismatch',
+            description=_('Invoice dialihkan ke Antrian Pengecualian (%s). Kategori: %s') % (
+                exception.name, exception.error_categories
+            ),
+        )
+        return exception
+
+    def _auto_resolve_exceptions(self):
+        """Kalau invoice di-validasi ulang dan hasilnya MATCH, exception
+        yang masih aktif otomatis ditutup dengan catatan otomatis -
+        supaya antrian pengecualian tidak menumpuk record yang sudah
+        tidak relevan.
+        """
+        self.ensure_one()
+        active_exception = self.exception_ids.filtered(
+            lambda e: e.state in ('open', 'in_progress', 'escalated')
+        )
+        for exc in active_exception:
+            exc.write({
+                'state': 'resolved',
+                'resolved_by': self.env.user.id,
+                'resolved_date': fields.Datetime.now(),
+                'resolution_notes': (exc.resolution_notes or '') +
+                    _('\n[Otomatis] Invoice divalidasi ulang dan hasilnya MATCH.'),
+            })
 
     @api.model
     def get_dashboard_data(self):
@@ -206,6 +297,19 @@ class InvoiceValidation(models.Model):
 
         self._find_purchase_order()
         self._find_goods_receipt()
+
+        self._log_audit(
+            'ocr_run',
+            state_before=self.state,
+            state_after=self.state,
+            description=_(
+                'OCR dijalankan. Invoice #: %s, Vendor: %s, PO: %s'
+            ) % (
+                self.ocr_invoice_number or '-',
+                self.ocr_vendor_name or '-',
+                self.purchase_order_id.name or (self.ocr_po_number or '-'),
+            ),
+        )
 
         return {
             'type': 'ir.actions.client',
@@ -343,6 +447,9 @@ class InvoiceValidation(models.Model):
 
         all_match = vendor_match and po_match and all_lines_match_qty and all_lines_match_price and total_match
 
+        state_before = self.state
+        new_state = 'validated' if all_match else 'mismatch'
+
         self.write({
             'match_vendor': vendor_match,
             'match_po': po_match,
@@ -350,13 +457,33 @@ class InvoiceValidation(models.Model):
             'match_price': all_lines_match_price,
             'match_total': total_match,
             'mismatch_notes': '\n'.join(notes) if notes else 'Semua pengecekan berhasil.',
-            'state': 'validated' if all_match else 'mismatch',
+            'state': new_state,
             'validated_by': self.env.user.id,
             'validated_date': fields.Datetime.now(),
         })
 
+        self._log_audit(
+            'validate',
+            state_before=state_before,
+            state_after=new_state,
+            description=_('Validasi dijalankan: %s.') % (
+                'MATCH - semua pengecekan berhasil' if all_match
+                else 'MISMATCH - ' + '; '.join(notes)
+            ),
+        )
+
+        # --- FR-07: Antrian Pengecualian -------------------------------
+        if new_state == 'mismatch':
+            self._route_to_exception_queue(notes, {
+                'Vendor': vendor_match, 'PO Number': po_match,
+                'Quantity': all_lines_match_qty, 'Price': all_lines_match_price,
+                'Total': total_match,
+            })
+        elif new_state == 'validated':
+            self._auto_resolve_exceptions()
+
         msg_type = 'success' if all_match else 'warning'
-        msg = '✅ MATCH - Invoice valid!' if all_match else '⚠️ MISMATCH - Terdapat ketidakcocokan!'
+        msg = '✅ MATCH - Invoice valid!' if all_match else '⚠️ MISMATCH - Dialihkan ke Antrian Pengecualian!'
 
         return {
             'type': 'ir.actions.client',
@@ -366,12 +493,22 @@ class InvoiceValidation(models.Model):
 
     def action_reset_draft(self):
         self.ensure_one()
+        state_before = self.state
         self.write({
             'state': 'draft', 'match_vendor': False, 'match_po': False,
             'match_qty': False, 'match_price': False, 'match_total': False,
             'mismatch_notes': '', 'validated_by': False, 'validated_date': False,
         })
+        self._log_audit(
+            'reset', state_before=state_before, state_after='draft',
+            description=_('Hasil validasi direset ke Waiting Validation oleh %s.') % self.env.user.name,
+        )
 
     def action_cancel(self):
         self.ensure_one()
+        state_before = self.state
         self.state = 'cancelled'
+        self._log_audit(
+            'cancel', state_before=state_before, state_after='cancelled',
+            description=_('Invoice validation dibatalkan oleh %s.') % self.env.user.name,
+        )

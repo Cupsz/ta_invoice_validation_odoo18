@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="iv_audit_log_tree_view" model="ir.ui.view">
+        <field name="name">invoice.validation.audit.log.list</field>
+        <field name="model">invoice.validation.audit.log</field>
+        <field name="arch" type="xml">
+            <list string="Audit Log" create="false" edit="false" delete="false"
+                  decoration-danger="action_type == 'cancel'"
+                  decoration-warning="action_type == 'reset'">
+                <field name="action_date" string="Waktu"/>
+                <field name="validation_id" string="Invoice Validation"/>
+                <field name="user_id" string="User"/>
+                <field name="action_type" string="Aksi" widget="badge"/>
+                <field name="state_before" string="Status Sebelum"/>
+                <field name="state_after" string="Status Sesudah"/>
+                <field name="description" string="Keterangan"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="iv_audit_log_search_view" model="ir.ui.view">
+        <field name="name">invoice.validation.audit.log.search</field>
+        <field name="model">invoice.validation.audit.log</field>
+        <field name="arch" type="xml">
+            <search string="Cari Audit Log">
+                <field name="validation_id" string="Invoice Validation"/>
+                <field name="user_id" string="User"/>
+                <field name="action_type" string="Aksi"/>
+                <separator/>
+                <filter string="Upload" name="filter_upload" domain="[('action_type','=','upload')]"/>
+                <filter string="OCR" name="filter_ocr" domain="[('action_type','=','ocr_run')]"/>
+                <filter string="Validasi" name="filter_validate" domain="[('action_type','=','validate')]"/>
+                <filter string="Reset" name="filter_reset" domain="[('action_type','=','reset')]"/>
+                <filter string="Cancel" name="filter_cancel" domain="[('action_type','=','cancel')]"/>
+                <separator/>
+                <filter string="Hari Ini" name="filter_today"
+                        domain="[('action_date','&gt;=', context_today().strftime('%Y-%m-%d 00:00:00'))]"/>
+                <group expand="0" string="Group By">
+                    <filter string="User" name="group_user" context="{'group_by':'user_id'}"/>
+                    <filter string="Jenis Aksi" name="group_action" context="{'group_by':'action_type'}"/>
+                    <filter string="Invoice" name="group_invoice" context="{'group_by':'validation_id'}"/>
+                    <filter string="Tanggal" name="group_date" context="{'group_by':'action_date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="iv_audit_log_action" model="ir.actions.act_window">
+        <field name="name">Audit Log</field>
+        <field name="res_model">invoice.validation.audit.log</field>
+        <field name="view_mode">list</field>
+        <field name="context">{'search_default_group_action': 0}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Belum ada aktivitas tercatat</p>
+            <p>Semua aktivitas validasi invoice (upload, OCR, validasi, reset, cancel) akan tercatat di sini secara otomatis.</p>
+        </field>
+    </record>
+
+</odoo>
