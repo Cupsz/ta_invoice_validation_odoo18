@@ -9,6 +9,7 @@
     'data': [
         'security/procurement_security.xml',
         'security/ir.model.access.csv',
+        'views/res_partner_views.xml',
         'views/purchase_order_views.xml',
         'views/procurement_menu.xml',
         'report/purchase_order_report.xml',
@@ -17,6 +18,7 @@
     'assets': {
         'web.assets_backend': [
             'procurement/static/src/js/qty_flexible_field.js',
+            'procurement/static/src/js/price_idr_field.js',
         ],
     },
     'installable': True,

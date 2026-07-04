@@ -19,13 +19,13 @@
                 </div>
 
                 <div class="ivdash-stats">
-                    <div class="ivdash-stat-card ivdash-stat-match" t-on-click="() => this.openFiltered('validated')">
+                    <div class="ivdash-stat-card ivdash-stat-VALID" t-on-click="() => this.openFiltered('validated')">
                         <div class="ivdash-stat-value"><t t-esc="state.match_count"/></div>
-                        <div class="ivdash-stat-label">Invoice Match</div>
+                        <div class="ivdash-stat-label">Invoice VALID</div>
                     </div>
-                    <div class="ivdash-stat-card ivdash-stat-mismatch" t-on-click="() => this.openFiltered('mismatch')">
+                    <div class="ivdash-stat-card ivdash-stat-INVALID" t-on-click="() => this.openFiltered('INVALID')">
                         <div class="ivdash-stat-value"><t t-esc="state.mismatch_count"/></div>
-                        <div class="ivdash-stat-label">Invoice Mismatch</div>
+                        <div class="ivdash-stat-label">Invoice INVALID</div>
                     </div>
                     <div class="ivdash-stat-card ivdash-stat-waiting" t-on-click="() => this.openFiltered('draft')">
                         <div class="ivdash-stat-value"><t t-esc="state.waiting_count"/></div>
@@ -147,6 +147,37 @@
                 </div>
 
                 <div class="ivdash-card">
+
+                    <!-- Banner: Duplikat -->
+                    <div t-if="state.detail.state === 'duplicate'" class="ivdash-alert ivdash-alert-danger">
+                        <i class="fa fa-exclamation-triangle me-2"/>
+                        <div>
+                            <div class="ivdash-alert-title">Invoice Duplikat Terdeteksi</div>
+                            <div class="ivdash-alert-body">
+                                Invoice ini sama dengan <strong><t t-esc="state.detail.duplicate_of_name"/></strong>
+                                yang sudah pernah diproses sebelumnya. Tidak dapat dilanjutkan ke Three-Way Matching.
+                            </div>
+                            <a href="#" class="ivdash-alert-link"
+                               t-on-click.prevent="() => this.openRecord(state.detail.duplicate_of_id)">
+                                Lihat Invoice Asli →
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Banner: Data Tidak Lengkap -->
+                    <div t-if="state.detail.state === 'incomplete'" class="ivdash-alert ivdash-alert-warning">
+                        <i class="fa fa-exclamation-circle me-2"/>
+                        <div>
+                            <div class="ivdash-alert-title">Data Invoice Tidak Lengkap</div>
+                            <div class="ivdash-alert-body">
+                                Field wajib berikut tidak terbaca dari hasil OCR, invoice tidak dapat divalidasi
+                                sampai lengkap: <strong><t t-esc="state.detail.missing_fields"/></strong>.
+                                Silakan upload ulang dengan PDF yang lebih jelas, atau lengkapi datanya secara manual
+                                lewat tampilan detail lengkap.
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="ivdash-detail-grid">
                         <div class="ivdash-detail-item">
                             <span class="ivdash-detail-label">Invoice Number</span>
@@ -205,8 +236,15 @@
                         </tfoot>
                     </table>
 
+                    <!-- Panel: Teks Hasil OCR (mentah, seluruh isi PDF) -->
+                    <div class="ivdash-rawtext-toggle" t-on-click="toggleRawText">
+                        <i t-att-class="state.rawTextOpen ? 'fa fa-chevron-down me-2' : 'fa fa-chevron-right me-2'"/>
+                        Lihat Teks Hasil OCR (Seluruh Isi PDF)
+                    </div>
+                    <pre t-if="state.rawTextOpen" class="ivdash-rawtext-body"><t t-esc="state.detail.raw_text || '(Tidak ada teks yang berhasil diekstrak)'"/></pre>
+
                     <div class="ivdash-upload-actions">
-                        <button class="btn btn-success ivdash-action-btn"
+                        <button t-if="state.detail.can_validate" class="btn btn-success ivdash-action-btn"
                                 t-on-click="runValidate" t-att-disabled="state.processing">
                             <t t-if="state.processing">
                                 <i class="fa fa-spinner fa-spin me-1"/> Memvalidasi...
@@ -214,6 +252,9 @@
                             <t t-else="">
                                 <i class="fa fa-check me-1"/> Validate
                             </t>
+                        </button>
+                        <button t-else="" class="btn btn-secondary ivdash-action-btn" disabled="disabled">
+                            <i class="fa fa-lock me-1"/> Validate (Terkunci)
                         </button>
                     </div>
                 </div>
@@ -318,9 +359,9 @@
                                     </td>
                                     <td class="text-end"><t t-esc="line.po_price.toLocaleString('id-ID')"/></td>
                                     <td class="text-center">
-                                        <span t-att-class="line.match_status === 'match' ? 'ivdash-badge ivdash-badge-match' : (line.match_status === 'mismatch' ? 'ivdash-badge ivdash-badge-mismatch' : 'ivdash-badge ivdash-badge-waiting')">
-                                            <t t-if="line.match_status === 'match'">Match</t>
-                                            <t t-elif="line.match_status === 'mismatch'">Mismatch</t>
+                                        <span t-att-class="line.match_status === 'match' ? 'ivdash-badge ivdash-badge-VALID' : (line.match_status === 'mismatch' ? 'ivdash-badge ivdash-badge-INVALID' : 'ivdash-badge ivdash-badge-waiting')">
+                                            <t t-if="line.match_status === 'match'">VALID</t>
+                                            <t t-elif="line.match_status === 'mismatch'">INVALID</t>
                                             <t t-else="">Pending</t>
                                         </span>
                                     </td>

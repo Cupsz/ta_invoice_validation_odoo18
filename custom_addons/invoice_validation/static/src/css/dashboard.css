@@ -82,17 +82,17 @@
     letter-spacing: 0.03em;
 }
 
-.ivdash-stat-match {
+.ivdash-stat-VALID {
     border-left-color: #2FA86A;
 }
-.ivdash-stat-match .ivdash-stat-value {
+.ivdash-stat-VALID .ivdash-stat-value {
     color: #2FA86A;
 }
 
-.ivdash-stat-mismatch {
+.ivdash-stat-INVALID {
     border-left-color: #E4574C;
 }
-.ivdash-stat-mismatch .ivdash-stat-value {
+.ivdash-stat-INVALID .ivdash-stat-value {
     color: #E4574C;
 }
 
@@ -184,12 +184,12 @@
     letter-spacing: 0.02em;
 }
 
-.ivdash-badge-match {
+.ivdash-badge-VALID {
     background: #E4F7EC;
     color: #1F8A53;
 }
 
-.ivdash-badge-mismatch {
+.ivdash-badge-INVALID {
     background: #FCEAE8;
     color: #C73D32;
 }
@@ -565,7 +565,7 @@
     background: #FDF2F1;
 }
 
-/* Sel spesifik yang jadi biang mismatch disorot lebih tegas */
+/* Sel spesifik yang jadi biang INVALID disorot lebih tegas */
 .ivdash-cell-bad {
     background: #FBDFDC !important;
     color: #C73D32 !important;
@@ -592,4 +592,99 @@
 .ivdash-legend-bad {
     background: #FBDFDC;
     border: 1px solid #E4574C;
+}
+
+/* ============================================================
+   Duplicate / Incomplete status badges
+   ============================================================ */
+.ivdash-badge-duplicate {
+    background: #F1E4FA;
+    color: #7B3FA0;
+}
+
+.ivdash-badge-incomplete {
+    background: #FFF1D6;
+    color: #B8790A;
+}
+
+/* ============================================================
+   Alert banners (duplicate / incomplete warnings)
+   ============================================================ */
+.ivdash-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+}
+
+.ivdash-alert i {
+    font-size: 18px;
+    margin-top: 1px;
+}
+
+.ivdash-alert-danger {
+    background: #FDEDEC;
+    color: #C0392B;
+    border: 1px solid #F5C6C2;
+}
+
+.ivdash-alert-warning {
+    background: #FFF6E5;
+    color: #9C6B0A;
+    border: 1px solid #F5DFA6;
+}
+
+.ivdash-alert-title {
+    font-weight: 700;
+    margin-bottom: 3px;
+}
+
+.ivdash-alert-body {
+    line-height: 1.5;
+}
+
+.ivdash-alert-link {
+    display: inline-block;
+    margin-top: 6px;
+    font-weight: 700;
+    color: inherit;
+    text-decoration: underline;
+}
+
+/* ============================================================
+   Raw OCR text panel
+   ============================================================ */
+.ivdash-rawtext-toggle {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #4B3F8F;
+    cursor: pointer;
+    padding: 10px 0;
+    border-top: 1px solid #EFEDF7;
+    margin-top: 8px;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.ivdash-rawtext-toggle:hover {
+    color: #2B2250;
+}
+
+.ivdash-rawtext-body {
+    background: #F7F6FC;
+    border: 1px solid #E5E2F2;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 11.5px;
+    color: #4A466B;
+    white-space: pre-wrap;
+    max-height: 320px;
+    overflow-y: auto;
+    margin: 0 0 8px;
+    font-family: "SFMono-Regular", Consolas, monospace;
 }

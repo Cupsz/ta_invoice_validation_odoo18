@@ -33,6 +33,7 @@ export class InvoiceValidationDashboard extends Component {
             // ocr / validate step
             processing: false,
             detail: null,
+            rawTextOpen: false,
         });
 
         onWillStart(async () => {
@@ -58,6 +59,7 @@ export class InvoiceValidationDashboard extends Component {
         this.state.fileName = "";
         this.state.fileBase64 = "";
         this.state.detail = null;
+        this.state.rawTextOpen = false;
         this.loadDashboard();
     }
 
@@ -84,10 +86,16 @@ export class InvoiceValidationDashboard extends Component {
     }
 
     statusBadgeClass(state) {
-        if (state === "validated") return "ivdash-badge ivdash-badge-match";
-        if (state === "mismatch") return "ivdash-badge ivdash-badge-mismatch";
+        if (state === "validated") return "ivdash-badge ivdash-badge-VALID";
+        if (state === "INVALID") return "ivdash-badge ivdash-badge-INVALID";
         if (state === "draft") return "ivdash-badge ivdash-badge-waiting";
+        if (state === "duplicate") return "ivdash-badge ivdash-badge-duplicate";
+        if (state === "incomplete") return "ivdash-badge ivdash-badge-incomplete";
         return "ivdash-badge";
+    }
+
+    toggleRawText() {
+        this.state.rawTextOpen = !this.state.rawTextOpen;
     }
 
     /* ---------------------------------------------------------- */
@@ -196,6 +204,10 @@ export class InvoiceValidationDashboard extends Component {
     /* ---------------------------------------------------------- */
     async runValidate() {
         if (!this.state.detail) return;
+        if (!this.state.detail.can_validate) {
+            this.notification.add("Invoice ini belum bisa divalidasi. Selesaikan pengecekan awal terlebih dahulu.", { type: "warning" });
+            return;
+        }
         this.state.processing = true;
         try {
             await this.orm.call("invoice.validation", "action_validate", [[this.state.detail.id]]);
