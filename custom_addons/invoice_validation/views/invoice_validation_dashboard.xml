@@ -22,7 +22,7 @@
                                         <field name="state" widget="label_selection"
                                                options="{'classes': {
                                                    'draft':'secondary','validated':'success',
-                                                   'mismatch':'danger','cancelled':'dark'
+                                                   'INVALID':'danger','cancelled':'dark'
                                                }}"/>
                                     </div>
                                 </div>
@@ -75,7 +75,7 @@
 
     <!-- ============================================================
          Finance Dashboard (custom OWL widget)
-         Menampilkan stat cards Match/Mismatch/Waiting + riwayat terbaru
+         Menampilkan stat cards VALID/INVALID/Waiting + riwayat terbaru
          dalam satu layar, sesuai mockup desain TA.
     ============================================================ -->
     <record id="iv_action_dashboard" model="ir.actions.client">

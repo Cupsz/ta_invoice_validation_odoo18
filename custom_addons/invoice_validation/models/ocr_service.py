@@ -41,7 +41,10 @@ class OcrService(models.AbstractModel):
             import PyPDF2
             reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
             for page in reader.pages:
-                text += page.extract_text() or ''
+                page_text = page.extract_text() or ''
+                text += page_text
+                if page_text and not page_text.endswith('\n'):
+                    text += '\n'
             if text.strip():
                 return text
         except Exception as e:
@@ -126,9 +129,16 @@ class OcrService(models.AbstractModel):
                 result['vendor_name'] = m.group(1).strip()
                 break
 
+        # PENTING: harus eksplisit cari label "Invoice Date" / "Tanggal"
+        # dulu (bukan cuma kata generik "date"), supaya tidak ketipu oleh
+        # baris "Due Date: ..." yang formatnya mirip tapi beda arti.
+        # Ambil apa adanya sisa baris setelah label (tanpa memaksa format
+        # angka dd/mm/yyyy) karena banyak invoice menulis tanggal dengan
+        # nama bulan, mis. "03 July 2026" atau "3 Juli 2026".
         for pattern in [
-            r'(?i)(?:invoice\s*)?date[:\s]+(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})',
-            r'(?i)tanggal[:\s]+(\d{1,2}[/\-]\d{1,2}[/\-]\d{2,4})',
+            r'(?i)invoice\s*date[:\s]+([^\n]+)',
+            r'(?i)tanggal\s*invoice[:\s]+([^\n]+)',
+            r'(?i)\btanggal\b[:\s]+([^\n]+)',
         ]:
             m = re.search(pattern, text)
             if m:

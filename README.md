@@ -130,7 +130,7 @@ Setelah selesai, akan muncul 3 menu baru di sidebar kiri: **Procurement**, **War
 2. Upload file invoice PDF
 3. Klik **🔍 Jalankan OCR**
 4. Periksa data hasil ekstraksi
-5. Klik **✅ Validate** → hasil MATCH / MISMATCH muncul
+5. Klik **✅ Validate** → hasil VALID / INVALID muncul
 
 ---
 
@@ -218,10 +218,10 @@ Simpan sebagai PDF (bisa dari Word/Google Docs export to PDF) lalu upload.
 custom_addons/
 ├── procurement/          → Tim Procurement: buat & cetak PO
 ├── warehouse/             → Tim Gudang: terima barang & cetak GR
-└── invoice_validation/    → Tim Finance: OCR + Three-Way Matching (INTI TA)
+└── invoice_validation/    → Tim Finance: OCR + Three-Way VALIDing (INTI TA)
     ├── models/
     │   ├── ocr_service.py            → ekstrak PDF jadi data
-    │   ├── invoice_validation.py     → logic matching
+    │   ├── invoice_validation.py     → logic VALIDing
     │   └── invoice_validation_line.py
     └── views/             → Dashboard, Form, Menu
 ```

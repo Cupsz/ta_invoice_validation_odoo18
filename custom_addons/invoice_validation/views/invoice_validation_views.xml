@@ -14,10 +14,10 @@
                             invisible="state != 'draft' or not purchase_order_id"
                             confirm="Jalankan Three-Way Matching sekarang?"/>
                     <button name="action_reset_draft" string="Reset" type="object"
-                            invisible="state not in ['validated','mismatch']"/>
+                            invisible="state not in ['validated','INVALID']"/>
                     <button name="action_cancel" string="Cancel" type="object"
                             invisible="state in ['cancelled']"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,validated,mismatch"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,validated,INVALID"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -61,12 +61,12 @@
                                     <field name="po_qty" string="Qty (PO)"/>
                                     <field name="po_price" string="Price (PO)"/>
                                     <field name="gr_qty" string="Qty (GR)"/>
-                                    <field name="match_qty" string="Qty ✓"/>
-                                    <field name="match_price" string="Price ✓"/>
-                                    <field name="match_status" string="Status" widget="badge"
-                                           decoration-success="match_status == 'match'"
-                                           decoration-danger="match_status == 'mismatch'"
-                                           decoration-warning="match_status == 'pending'"/>
+                                     <field name="match_qty" string="Qty ✓"/>
+                                     <field name="match_price" string="Price ✓"/>
+                                     <field name="match_status" string="Status" widget="badge"
+                                         decoration-success="match_status == 'match'"
+                                         decoration-danger="match_status == 'mismatch'"
+                                         decoration-warning="match_status == 'pending'"/>
                                 </list>
                             </field>
                         </page>
@@ -86,7 +86,7 @@
                                 </group>
                             </group>
                             <field name="matching_summary" widget="html" readonly="1"/>
-                            <field name="mismatch_notes" string="Catatan Mismatch" readonly="1"
+                            <field name="mismatch_notes" string="Catatan INVALID" readonly="1"
                                    invisible="state == 'validated'"/>
                         </page>
 
@@ -105,7 +105,7 @@
         <field name="arch" type="xml">
             <list string="Riwayat Validasi"
                   decoration-success="state == 'validated'"
-                  decoration-danger="state == 'mismatch'"
+                  decoration-danger="state == 'INVALID'"
                   decoration-muted="state == 'cancelled'"
                   decoration-info="state == 'draft'">
                 <field name="name" string="Validation #"/>
@@ -118,7 +118,7 @@
                 <field name="validated_date" string="Date"/>
                 <field name="state" string="Status" widget="badge"
                        decoration-success="state == 'validated'"
-                       decoration-danger="state == 'mismatch'"
+                       decoration-danger="state == 'INVALID'"
                        decoration-info="state == 'draft'"
                        decoration-muted="state == 'cancelled'"/>
             </list>
@@ -136,8 +136,8 @@
                 <field name="purchase_order_id" string="PO Number"/>
                 <separator/>
                 <filter string="Waiting" name="draft" domain="[('state','=','draft')]"/>
-                <filter string="Match" name="match" domain="[('state','=','validated')]"/>
-                <filter string="Mismatch" name="mismatch" domain="[('state','=','mismatch')]"/>
+                <filter string="VALID" name="VALID" domain="[('state','=','validated')]"/>
+                <filter string="INVALID" name="INVALID" domain="[('state','=','INVALID')]"/>
                 <group expand="0" string="Group By">
                     <filter string="Vendor" name="group_vendor" context="{'group_by':'ocr_vendor_name'}"/>
                     <filter string="Status" name="group_status" context="{'group_by':'state'}"/>
@@ -166,18 +166,18 @@
         <field name="context">{'search_default_draft': 1}</field>
     </record>
 
-    <record id="iv_action_match" model="ir.actions.act_window">
-        <field name="name">Invoice Match</field>
+    <record id="iv_action_valid" model="ir.actions.act_window">
+        <field name="name">Invoice VALID</field>
         <field name="res_model">invoice.validation</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('state','=','validated')]</field>
     </record>
 
-    <record id="iv_action_mismatch" model="ir.actions.act_window">
-        <field name="name">Invoice Mismatch</field>
+    <record id="iv_action_invalid" model="ir.actions.act_window">
+        <field name="name">Invoice INVALID</field>
         <field name="res_model">invoice.validation</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('state','=','mismatch')]</field>
+        <field name="domain">[('state','=','INVALID')]</field>
     </record>
 
 </odoo>
