@@ -12,6 +12,8 @@
         'data/invoice_validation_sequence.xml',
         'views/invoice_validation_views.xml',
         'views/invoice_validation_dashboard.xml',
+        'views/invoice_validation_audit_log_views.xml',
+        'views/invoice_exception_views.xml',
         'views/invoice_validation_menu.xml',
     ],
     'assets': {

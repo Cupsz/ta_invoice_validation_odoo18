@@ -7,3 +7,7 @@ access_ocr_service,ocr.service,invoice_validation.model_ocr_service,invoice_vali
 access_finance_po,finance.po,purchase.model_purchase_order,invoice_validation.group_invoice_validation_user,1,0,0,0
 access_finance_picking,finance.picking,stock.model_stock_picking,invoice_validation.group_invoice_validation_user,1,0,0,0
 access_finance_move,finance.move,stock.model_stock_move,invoice_validation.group_invoice_validation_user,1,0,0,0
+access_iv_audit_log_user,iv.audit.log.user,invoice_validation.model_invoice_validation_audit_log,invoice_validation.group_invoice_validation_user,1,0,0,0
+access_iv_audit_log_manager,iv.audit.log.manager,invoice_validation.model_invoice_validation_audit_log,invoice_validation.group_invoice_validation_manager,1,0,0,0
+access_iv_exception_user,iv.exception.user,invoice_validation.model_invoice_exception,invoice_validation.group_invoice_validation_user,1,1,1,0
+access_iv_exception_manager,iv.exception.manager,invoice_validation.model_invoice_exception,invoice_validation.group_invoice_validation_manager,1,1,1,1

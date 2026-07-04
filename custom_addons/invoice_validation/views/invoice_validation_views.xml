@@ -93,6 +93,32 @@
                         <page string="Raw OCR Text (Debug)" groups="base.group_system">
                             <field name="ocr_raw_text" widget="text" readonly="1"/>
                         </page>
+
+                        <page string="⚠️ Exceptions" invisible="not exception_ids">
+                            <field name="exception_ids" readonly="1">
+                                <list string="Exceptions" create="false" delete="false">
+                                    <field name="name"/>
+                                    <field name="exception_date" string="Tanggal"/>
+                                    <field name="error_categories" string="Kategori"/>
+                                    <field name="priority" widget="badge"/>
+                                    <field name="assigned_to"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="🔒 Audit Log">
+                            <field name="audit_log_ids" readonly="1">
+                                <list string="Audit Log" create="false" edit="false" delete="false">
+                                    <field name="action_date" string="Waktu"/>
+                                    <field name="user_id" string="User"/>
+                                    <field name="action_type" string="Aksi" widget="badge"/>
+                                    <field name="state_before" string="Status Sebelum"/>
+                                    <field name="state_after" string="Status Sesudah"/>
+                                    <field name="description" string="Keterangan"/>
+                                </list>
+                            </field>
+                        </page>
                     </notebook>
                 </sheet>
             </form>

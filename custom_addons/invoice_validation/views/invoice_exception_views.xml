@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="iv_exception_form_view" model="ir.ui.view">
+        <field name="name">invoice.exception.form</field>
+        <field name="model">invoice.exception</field>
+        <field name="arch" type="xml">
+            <form string="Invoice Exception">
+                <header>
+                    <button name="action_assign_to_me" string="Assign ke Saya" type="object"
+                            class="btn-primary" invisible="state not in ('open',)"/>
+                    <button name="action_resolve" string="Tandai Selesai" type="object"
+                            class="btn-success" invisible="state not in ('open', 'in_progress', 'escalated')"/>
+                    <button name="action_escalate" string="Escalate" type="object"
+                            class="btn-warning" invisible="state not in ('open', 'in_progress')"/>
+                    <button name="action_reject" string="Reject Invoice" type="object"
+                            class="btn-danger" invisible="state not in ('open', 'in_progress', 'escalated')"
+                            confirm="Yakin ingin menolak invoice ini? Pastikan sudah dikoordinasikan dengan vendor/PO terkait."/>
+                    <field name="state" widget="statusbar" statusbar_visible="open,in_progress,resolved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Invoice Terkait">
+                            <field name="validation_id" readonly="1"/>
+                            <field name="invoice_number" readonly="1"/>
+                            <field name="vendor_name" readonly="1"/>
+                            <field name="po_number" readonly="1"/>
+                            <field name="ocr_total" readonly="1"/>
+                            <button name="action_view_invoice" string="Buka Invoice →" type="object" class="btn-link"/>
+                        </group>
+                        <group string="Penanganan">
+                            <field name="exception_date" readonly="1"/>
+                            <field name="priority"/>
+                            <field name="assigned_to"/>
+                            <field name="resolved_by" readonly="1" invisible="not resolved_by"/>
+                            <field name="resolved_date" readonly="1" invisible="not resolved_date"/>
+                        </group>
+                    </group>
+                    <group string="Laporan Kesalahan">
+                        <field name="error_categories" readonly="1"/>
+                        <field name="error_report" readonly="1" nolabel="1"/>
+                    </group>
+                    <group string="Catatan Penyelesaian">
+                        <field name="resolution_notes" nolabel="1" placeholder="Tuliskan tindakan yang dilakukan untuk menyelesaikan pengecualian ini (misal: konfirmasi ke vendor, revisi PO, dsb)"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="iv_exception_list_view" model="ir.ui.view">
+        <field name="name">invoice.exception.list</field>
+        <field name="model">invoice.exception</field>
+        <field name="arch" type="xml">
+            <list string="Antrian Pengecualian"
+                  decoration-danger="state == 'escalated'"
+                  decoration-muted="state in ('resolved', 'rejected')"
+                  decoration-warning="state == 'open'">
+                <field name="name"/>
+                <field name="exception_date" string="Tanggal"/>
+                <field name="invoice_number"/>
+                <field name="vendor_name"/>
+                <field name="error_categories" string="Kategori Kesalahan"/>
+                <field name="priority" widget="badge"/>
+                <field name="assigned_to"/>
+                <field name="state" widget="badge"
+                       decoration-warning="state == 'open'"
+                       decoration-info="state == 'in_progress'"
+                       decoration-success="state == 'resolved'"
+                       decoration-danger="state == 'escalated'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="iv_exception_kanban_view" model="ir.ui.view">
+        <field name="name">invoice.exception.kanban</field>
+        <field name="model">invoice.exception</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="priority"/>
+                <field name="invoice_number"/>
+                <field name="vendor_name"/>
+                <field name="error_categories"/>
+                <field name="assigned_to"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_card oe_kanban_global_click p-2">
+                            <strong><field name="name"/></strong>
+                            <span class="badge float-end" t-attf-class="text-bg-{{record.priority.raw_value == 'high' and 'danger' or 'secondary'}}">
+                                <field name="priority"/>
+                            </span>
+                            <div><field name="invoice_number"/> - <field name="vendor_name"/></div>
+                            <div class="text-muted small"><field name="error_categories"/></div>
+                            <div class="mt-1">
+                                <field name="assigned_to" widget="many2one_avatar_user"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="iv_exception_search_view" model="ir.ui.view">
+        <field name="name">invoice.exception.search</field>
+        <field name="model">invoice.exception</field>
+        <field name="arch" type="xml">
+            <search string="Cari Exception">
+                <field name="name"/>
+                <field name="invoice_number"/>
+                <field name="vendor_name"/>
+                <field name="assigned_to"/>
+                <separator/>
+                <filter string="Open" name="filter_open" domain="[('state','=','open')]"/>
+                <filter string="Sedang Ditangani" name="filter_in_progress" domain="[('state','=','in_progress')]"/>
+                <filter string="Escalated" name="filter_escalated" domain="[('state','=','escalated')]"/>
+                <filter string="Belum Selesai" name="filter_active" domain="[('state','in',('open','in_progress','escalated'))]"/>
+                <filter string="Resolved" name="filter_resolved" domain="[('state','=','resolved')]"/>
+                <separator/>
+                <filter string="Belum Ditugaskan" name="filter_unassigned" domain="[('assigned_to','=',False)]"/>
+                <filter string="Ditugaskan ke Saya" name="filter_mine" domain="[('assigned_to','=',uid)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_state" context="{'group_by':'state'}"/>
+                    <filter string="Ditugaskan Ke" name="group_assigned" context="{'group_by':'assigned_to'}"/>
+                    <filter string="Priority" name="group_priority" context="{'group_by':'priority'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="iv_exception_action" model="ir.actions.act_window">
+        <field name="name">Antrian Pengecualian</field>
+        <field name="res_model">invoice.exception</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Tidak ada pengecualian saat ini 🎉</p>
+            <p>Invoice yang gagal validasi (mismatch) akan otomatis muncul di sini untuk ditindaklanjuti Tim Finance.</p>
+        </field>
+    </record>
+
+</odoo>
