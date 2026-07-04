@@ -2,5 +2,5 @@
 .o_field_html table.table-bordered { max-width: 400px; }
 .o_kanban_view .o_kanban_card { border-left: 4px solid transparent; }
 .o_kanban_view .o_kanban_card[data-state="validated"] { border-left-color: #198754; }
-.o_kanban_view .o_kanban_card[data-state="mismatch"] { border-left-color: #dc3545; }
+.o_kanban_view .o_kanban_card[data-state="INVALID"] { border-left-color: #dc3545; }
 .o_kanban_view .o_kanban_card[data-state="draft"] { border-left-color: #0dcaf0; }

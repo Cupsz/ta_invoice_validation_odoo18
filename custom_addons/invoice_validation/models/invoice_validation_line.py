@@ -13,20 +13,20 @@ class InvoiceValidationLine(models.Model):
 
     product_name = fields.Char(string='Product (Invoice)', required=True)
     product_id = fields.Many2one('product.product', string='Product (Odoo)')
-    invoice_qty = fields.Float(string='Qty (Invoice)', digits=(16, 2))
-    invoice_price = fields.Float(string='Unit Price (Invoice)', digits=(16, 2))
+    invoice_qty = fields.Float(string='Qty (Invoice)', digits=(16, 0))
+    invoice_price = fields.Float(string='Unit Price (Invoice)', digits=(16, 0))
     invoice_subtotal = fields.Float(
-        string='Subtotal (Invoice)', compute='_compute_invoice_subtotal', store=True,
+        string='Subtotal (Invoice)', digits=(16, 0), compute='_compute_invoice_subtotal', store=True,
     )
 
-    po_qty = fields.Float(string='Qty (PO)', digits=(16, 2), readonly=True)
-    po_price = fields.Float(string='Unit Price (PO)', digits=(16, 2), readonly=True)
-    gr_qty = fields.Float(string='Qty Received (GR)', digits=(16, 2), readonly=True)
+    po_qty = fields.Float(string='Qty (PO)', digits=(16, 0), readonly=True)
+    po_price = fields.Float(string='Unit Price (PO)', digits=(16, 0), readonly=True)
+    gr_qty = fields.Float(string='Qty Received (GR)', digits=(16, 0), readonly=True)
 
     match_qty = fields.Boolean(string='Qty Match?', compute='_compute_line_match', store=True)
     match_price = fields.Boolean(string='Price Match?', compute='_compute_line_match', store=True)
     match_status = fields.Selection([
-        ('match', 'Match'), ('mismatch', 'Mismatch'), ('pending', 'Pending'),
+        ('match', 'VALID'), ('mismatch', 'INVALID'), ('pending', 'Pending'),
     ], string='Line Status', default='pending', compute='_compute_line_match', store=True)
 
     TOLERANCE_PCT = 0.01
