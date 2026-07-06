@@ -17,8 +17,9 @@
     ],
     'assets': {
         'web.assets_backend': [
+            # qty_flexible masih dipakai di modul warehouse (Qty Ordered/Qty
+            # Received pada Goods Receipt), jadi tetap dimuat di sini.
             'procurement/static/src/js/qty_flexible_field.js',
-            'procurement/static/src/js/price_idr_field.js',
         ],
     },
     'installable': True,

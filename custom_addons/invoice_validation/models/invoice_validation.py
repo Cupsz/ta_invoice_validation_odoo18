@@ -152,6 +152,13 @@ class InvoiceValidation(models.Model):
             'error_report': error_report_html,
             'priority': 'high' if len(failed_categories) >= 3 else 'normal',
         })
+
+        self._log_audit(
+            'exception_create', state_before='INVALID', state_after='INVALID',
+            description=_('Invoice dialihkan ke Antrian Pengecualian (%s). Kategori: %s') % (
+                exception.name, exception.error_categories
+            ),
+        )
         return exception
 
     def _auto_resolve_exceptions(self):
@@ -432,7 +439,7 @@ class InvoiceValidation(models.Model):
         all_match = vendor_match and po_match and all_lines_match_qty and all_lines_match_price and total_match
 
         state_before = self.state
-        new_state = 'validated' if all_match else 'mismatch'
+        new_state = 'validated' if all_match else 'INVALID'
 
         self.write({
             'match_vendor': vendor_match,
@@ -455,7 +462,7 @@ class InvoiceValidation(models.Model):
         )
 
         # --- FR-07: Antrian Pengecualian -------------------------------
-        if new_state == 'mismatch':
+        if new_state == 'INVALID':
             self._route_to_exception_queue(notes, {
                 'Vendor': vendor_match, 'PO Number': po_match,
                 'Quantity': all_lines_match_qty, 'Price': all_lines_match_price,

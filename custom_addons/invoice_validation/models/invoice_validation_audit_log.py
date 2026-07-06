@@ -42,15 +42,19 @@ class InvoiceValidationAuditLog(models.Model):
     # --- 5. Perubahan data yang terjadi (status invoice sebelum/sesudah)
     state_before = fields.Selection([
         ('draft', 'Waiting Validation'),
-        ('validated', 'Match'),
-        ('mismatch', 'Mismatch'),
+        ('incomplete', 'Data Tidak Lengkap'),
+        ('duplicate', 'Duplikat'),
+        ('validated', 'VALID'),
+        ('INVALID', 'INVALID'),
         ('cancelled', 'Cancelled'),
     ], string='Status Sebelum', readonly=True)
 
     state_after = fields.Selection([
         ('draft', 'Waiting Validation'),
-        ('validated', 'Match'),
-        ('mismatch', 'Mismatch'),
+        ('incomplete', 'Data Tidak Lengkap'),
+        ('duplicate', 'Duplikat'),
+        ('validated', 'VALID'),
+        ('INVALID', 'INVALID'),
         ('cancelled', 'Cancelled'),
     ], string='Status Sesudah', readonly=True)
 
