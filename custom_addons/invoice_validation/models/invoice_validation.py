@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import base64
-import hashlib
 import logging
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
@@ -19,27 +17,21 @@ class InvoiceValidation(models.Model):
 
     state = fields.Selection([
         ('draft', 'Waiting Validation'),
-        ('incomplete', 'Data Tidak Lengkap'),
-        ('duplicate', 'Duplikat'),
-        ('validated', 'VALID'),
-        ('INVALID', 'INVALID'),
+        ('validated', 'Match'),
+        ('mismatch', 'Mismatch'),
         ('cancelled', 'Cancelled'),
     ], string='Status', default='draft', required=True)
 
     invoice_file = fields.Binary(string='Invoice PDF', required=True)
     invoice_filename = fields.Char(string='Filename')
-    file_checksum = fields.Char(string='File Checksum', compute='_compute_file_checksum', store=True)
 
     ocr_invoice_number = fields.Char(string='Invoice Number')
     ocr_vendor_name = fields.Char(string='Vendor (OCR)')
     ocr_invoice_date = fields.Char(string='Invoice Date (OCR)')
     invoice_date = fields.Date(string='Invoice Date')
     ocr_po_number = fields.Char(string='PO Number (OCR)')
-    ocr_total = fields.Float(string='Total (OCR)', digits=(16, 0))
+    ocr_total = fields.Float(string='Total (OCR)', digits=(16, 2))
     ocr_raw_text = fields.Text(string='Raw OCR Text')
-
-    duplicate_of_id = fields.Many2one('invoice.validation', string='Duplikat Dari', readonly=True)
-    missing_fields = fields.Char(string='Field Yang Belum Lengkap', readonly=True)
 
     purchase_order_id = fields.Many2one('purchase.order', string='Purchase Order')
     stock_picking_id = fields.Many2one('stock.picking', string='Goods Receipt')
@@ -74,18 +66,6 @@ class InvoiceValidation(models.Model):
     validated_by = fields.Many2one('res.users', string='Validated By', readonly=True)
     validated_date = fields.Datetime(string='Validated Date', readonly=True)
 
-    @api.depends('invoice_file')
-    def _compute_file_checksum(self):
-        for rec in self:
-            if rec.invoice_file:
-                try:
-                    raw_bytes = base64.b64decode(rec.invoice_file)
-                    rec.file_checksum = hashlib.md5(raw_bytes).hexdigest()
-                except Exception:
-                    rec.file_checksum = False
-            else:
-                rec.file_checksum = False
-
     def _compute_matching_summary(self):
         for rec in self:
             checks = [
@@ -100,9 +80,9 @@ class InvoiceValidation(models.Model):
                 rows += f'<tr><td>{label}</td><td class="text-{color}"><strong>{icon}</strong></td></tr>'
 
             if rec.state == 'validated':
-                status_badge = '<span class="badge bg-success fs-6">VALID</span>'
-            elif rec.state == 'INVALID':
-                status_badge = '<span class="badge bg-danger fs-6">INVALID</span>'
+                status_badge = '<span class="badge bg-success fs-6">MATCH</span>'
+            elif rec.state == 'mismatch':
+                status_badge = '<span class="badge bg-danger fs-6">MISMATCH</span>'
             else:
                 status_badge = '<span class="badge bg-secondary fs-6">PENDING</span>'
 
@@ -125,15 +105,15 @@ class InvoiceValidation(models.Model):
                 'upload',
                 state_before=False,
                 state_after=rec.state,
-                description=_('Invoice diupload (%s).') % (rec.invoice_filename or rec.name),
+                result=_('Invoice diupload'),
+                description=rec.invoice_filename or rec.name,
             )
         return records
 
-    def _log_audit(self, action_type, state_before, state_after, description):
+    def _log_audit(self, action_type, state_before, state_after, description, result=False, status='success'):
         """Catat satu entri audit log untuk record ini.
-        Dipanggil di setiap aksi utama (upload, OCR, validate, reset,
-        cancel) sehingga tersedia jejak who/what/when + status
-        sebelum-sesudah untuk keperluan audit dan kepatuhan.
+        Dipanggil di 2 aksi inti: upload dan validate - supaya bisa
+        tahu invoice apa, diupload siapa, dan divalidasi siapa.
         """
         self.ensure_one()
         self.env['invoice.validation.audit.log'].sudo().create({
@@ -142,6 +122,8 @@ class InvoiceValidation(models.Model):
             'action_type': action_type,
             'state_before': state_before,
             'state_after': state_after,
+            'result': result,
+            'status': status,
             'description': description,
         })
 
@@ -150,7 +132,9 @@ class InvoiceValidation(models.Model):
         pengecualian. Dipanggil otomatis dari action_validate() saat hasil
         matching = mismatch. Kalau sudah ada exception aktif untuk invoice
         ini, tidak dibuat duplikat - cukup dianggap masih dalam
-        penanganan yang sama.
+        penanganan yang sama. Riwayat penanganan exception dicatat di
+        model invoice.exception sendiri (assigned_to/resolved_by/state),
+        tidak digandakan ke audit log utama.
         """
         self.ensure_one()
         active_exception = self.exception_ids.filtered(
@@ -168,13 +152,6 @@ class InvoiceValidation(models.Model):
             'error_report': error_report_html,
             'priority': 'high' if len(failed_categories) >= 3 else 'normal',
         })
-
-        self._log_audit(
-            'exception_create', state_before='mismatch', state_after='mismatch',
-            description=_('Invoice dialihkan ke Antrian Pengecualian (%s). Kategori: %s') % (
-                exception.name, exception.error_categories
-            ),
-        )
         return exception
 
     def _auto_resolve_exceptions(self):
@@ -200,12 +177,12 @@ class InvoiceValidation(models.Model):
     def get_dashboard_data(self):
         """
         Kumpulkan data ringkasan untuk Finance Dashboard:
-        - jumlah VALID / INVALID / Waiting
+        - jumlah Match / Mismatch / Waiting
         - 10 riwayat validasi terbaru
         Dipanggil dari widget dashboard (OWL) di frontend.
         """
         match_count = self.search_count([('state', '=', 'validated')])
-        mismatch_count = self.search_count([('state', '=', 'INVALID')])
+        mismatch_count = self.search_count([('state', '=', 'mismatch')])
         waiting_count = self.search_count([('state', '=', 'draft')])
 
         recent = self.search([], limit=10, order='create_date desc')
@@ -263,7 +240,6 @@ class InvoiceValidation(models.Model):
             'name': rec.name,
             'state': rec.state,
             'state_label': dict(rec._fields['state'].selection).get(rec.state, rec.state),
-            'can_validate': rec.state == 'draft',
             'invoice_number': rec.ocr_invoice_number or '-',
             'vendor_name': rec.ocr_vendor_name or '-',
             'po_vendor_name': rec.purchase_order_id.partner_id.name or '-',
@@ -274,10 +250,6 @@ class InvoiceValidation(models.Model):
             'total': rec.ocr_total,
             'po_total': rec.purchase_order_id.amount_total,
             'lines': lines,
-            'raw_text': rec.ocr_raw_text or '',
-            'missing_fields': rec.missing_fields or '',
-            'duplicate_of_id': rec.duplicate_of_id.id or False,
-            'duplicate_of_name': rec.duplicate_of_id.name or '',
             'match_vendor': rec.match_vendor,
             'match_po': rec.match_po,
             'match_qty': rec.match_qty,
@@ -323,135 +295,15 @@ class InvoiceValidation(models.Model):
         self._find_purchase_order()
         self._find_goods_receipt()
 
-        self._log_audit(
-            'ocr_run',
-            state_before=self.state,
-            state_after=self.state,
-            description=_(
-                'OCR dijalankan. Invoice #: %s, Vendor: %s, PO: %s'
-            ) % (
-                self.ocr_invoice_number or '-',
-                self.ocr_vendor_name or '-',
-                self.purchase_order_id.name or (self.ocr_po_number or '-'),
-            ),
-        )
-
-        # ------------------------------------------------------------
-        # STEP 1: Cek duplikasi invoice.
-        # Invoice yang sudah pernah diproses sebelumnya (baik file yang
-        # sama persis, maupun kombinasi Nomor Invoice + Vendor yang sama)
-        # TIDAK BOLEH lanjut ke proses Three-Way Matching.
-        # ------------------------------------------------------------
-        duplicate = self._check_duplicate_invoice()
-        if duplicate:
-            self.write({
-                'state': 'duplicate',
-                'duplicate_of_id': duplicate.id,
-                'missing_fields': False,
-            })
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'Invoice Duplikat Terdeteksi',
-                    'message': _(
-                        'Invoice ini terdeteksi sama dengan %s yang sudah pernah '
-                        'diproses sebelumnya. Tidak dapat dilanjutkan ke validasi.'
-                    ) % duplicate.name,
-                    'type': 'danger',
-                    'sticky': True,
-                }
-            }
-
-        # ------------------------------------------------------------
-        # STEP 2: Cek kelengkapan field wajib hasil OCR.
-        # Kalau ada field wajib yang tidak terbaca, invoice TIDAK BOLEH
-        # lanjut ke proses Three-Way Matching sampai datanya lengkap.
-        # ------------------------------------------------------------
-        missing = self._check_required_fields()
-        if missing:
-            self.write({
-                'state': 'incomplete',
-                'missing_fields': ', '.join(missing),
-                'duplicate_of_id': False,
-            })
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'Data Invoice Tidak Lengkap',
-                    'message': _('Field wajib berikut tidak terbaca dari OCR: %s') % ', '.join(missing),
-                    'type': 'warning',
-                    'sticky': True,
-                }
-            }
-
-        # STEP 3: Lolos semua pengecekan awal -> siap untuk divalidasi.
-        self.write({'state': 'draft', 'missing_fields': False, 'duplicate_of_id': False})
-
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': 'OCR Selesai',
-                'message': 'Data invoice berhasil diekstrak dan lolos pengecekan awal. Silakan periksa dan klik Validate.',
+                'message': 'Data invoice berhasil diekstrak. Silakan periksa dan klik Validate.',
                 'type': 'success',
             }
         }
-
-    def _check_duplicate_invoice(self):
-        """
-        Deteksi invoice duplikat dengan 2 cara:
-        1. File checksum identik (PDF yang sama persis diunggah ulang).
-        2. Kombinasi Nomor Invoice + Vendor (hasil OCR) sama dengan
-           record lain yang sudah ada (bukan invoice baru, hanya
-           diunggah ulang / discan ulang).
-        """
-        self.ensure_one()
-        domain = [('id', '!=', self.id), ('state', '!=', 'cancelled')]
-
-        duplicate = self.env['invoice.validation']
-        if self.file_checksum:
-            duplicate = self.search(domain + [('file_checksum', '=', self.file_checksum)], limit=1)
-
-        if not duplicate and self.ocr_invoice_number and self.ocr_vendor_name:
-            duplicate = self.search(domain + [
-                ('ocr_invoice_number', '=ilike', self.ocr_invoice_number.strip()),
-                ('ocr_vendor_name', '=ilike', self.ocr_vendor_name.strip()),
-            ], limit=1)
-
-        return duplicate
-
-    def _check_required_fields(self):
-        """
-        Pastikan field wajib pada invoice sudah terbaca lengkap oleh OCR
-        sebelum boleh lanjut ke proses Three-Way Matching.
-        """
-        self.ensure_one()
-        missing = []
-
-        if not self.ocr_invoice_number:
-            missing.append('Nomor Invoice')
-        if not self.ocr_vendor_name:
-            missing.append('Nama Vendor')
-        if not self.ocr_invoice_date:
-            missing.append('Tanggal Invoice')
-        if not self.ocr_po_number:
-            missing.append('Nomor PO')
-        if not self.ocr_total or self.ocr_total <= 0:
-            missing.append('Total Invoice')
-
-        if not self.line_ids:
-            missing.append('Baris Item Produk')
-        else:
-            invalid_line = any(
-                (not line.product_name) or line.invoice_qty <= 0
-                for line in self.line_ids
-            )
-            if invalid_line:
-                missing.append('Detail Item Produk (nama/qty tidak valid)')
-
-        return missing
 
     def _find_purchase_order(self):
         self.ensure_one()
@@ -527,10 +379,6 @@ class InvoiceValidation(models.Model):
 
     def action_validate(self):
         self.ensure_one()
-        if self.state == 'duplicate':
-            raise UserError(_('Invoice ini terdeteksi duplikat. Tidak dapat diproses ke validasi.'))
-        if self.state == 'incomplete':
-            raise UserError(_('Data invoice belum lengkap (%s). Lengkapi terlebih dahulu sebelum validasi.') % (self.missing_fields or ''))
         if not self.purchase_order_id:
             raise UserError(_('Purchase Order tidak ditemukan. Pastikan PO Number di invoice valid.'))
 
@@ -593,7 +441,7 @@ class InvoiceValidation(models.Model):
             'match_price': all_lines_match_price,
             'match_total': total_match,
             'mismatch_notes': '\n'.join(notes) if notes else 'Semua pengecekan berhasil.',
-            'state': 'validated' if all_match else 'mismatch',
+            'state': new_state,
             'validated_by': self.env.user.id,
             'validated_date': fields.Datetime.now(),
         })
@@ -602,10 +450,8 @@ class InvoiceValidation(models.Model):
             'validate',
             state_before=state_before,
             state_after=new_state,
-            description=_('Validasi dijalankan: %s.') % (
-                'MATCH - semua pengecekan berhasil' if all_match
-                else 'MISMATCH - ' + '; '.join(notes)
-            ),
+            result=_('Match') if all_match else _('Mismatch'),
+            description='\n'.join(notes) if notes else 'Semua pengecekan berhasil.',
         )
 
         # --- FR-07: Antrian Pengecualian -------------------------------
@@ -619,7 +465,7 @@ class InvoiceValidation(models.Model):
             self._auto_resolve_exceptions()
 
         msg_type = 'success' if all_match else 'warning'
-        msg = '✅ VALID - Invoice valid!' if all_match else '⚠️ INVALID - Dialihkan ke Antrian Pengecualian!'
+        msg = '✅ MATCH - Invoice valid!' if all_match else '⚠️ MISMATCH - Dialihkan ke Antrian Pengecualian!'
 
         return {
             'type': 'ir.actions.client',
@@ -629,22 +475,12 @@ class InvoiceValidation(models.Model):
 
     def action_reset_draft(self):
         self.ensure_one()
-        state_before = self.state
         self.write({
             'state': 'draft', 'match_vendor': False, 'match_po': False,
             'match_qty': False, 'match_price': False, 'match_total': False,
             'mismatch_notes': '', 'validated_by': False, 'validated_date': False,
         })
-        self._log_audit(
-            'reset', state_before=state_before, state_after='draft',
-            description=_('Hasil validasi direset ke Waiting Validation oleh %s.') % self.env.user.name,
-        )
 
     def action_cancel(self):
         self.ensure_one()
-        state_before = self.state
         self.state = 'cancelled'
-        self._log_audit(
-            'cancel', state_before=state_before, state_after='cancelled',
-            description=_('Invoice validation dibatalkan oleh %s.') % self.env.user.name,
-        )

@@ -6,6 +6,8 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: odoo
       POSTGRES_PASSWORD: odoo
+    ports:
+      - "5433:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
