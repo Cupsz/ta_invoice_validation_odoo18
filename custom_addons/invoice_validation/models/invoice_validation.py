@@ -170,7 +170,7 @@ class InvoiceValidation(models.Model):
         })
 
         self._log_audit(
-            'exception_create', state_before='mismatch', state_after='mismatch',
+            'exception_create', state_before='INVALID', state_after='INVALID',
             description=_('Invoice dialihkan ke Antrian Pengecualian (%s). Kategori: %s') % (
                 exception.name, exception.error_categories
             ),
@@ -584,7 +584,7 @@ class InvoiceValidation(models.Model):
         all_match = vendor_match and po_match and all_lines_match_qty and all_lines_match_price and total_match
 
         state_before = self.state
-        new_state = 'validated' if all_match else 'mismatch'
+        new_state = 'validated' if all_match else 'INVALID'
 
         self.write({
             'match_vendor': vendor_match,
@@ -593,7 +593,7 @@ class InvoiceValidation(models.Model):
             'match_price': all_lines_match_price,
             'match_total': total_match,
             'mismatch_notes': '\n'.join(notes) if notes else 'Semua pengecekan berhasil.',
-            'state': 'validated' if all_match else 'mismatch',
+            'state': new_state,
             'validated_by': self.env.user.id,
             'validated_date': fields.Datetime.now(),
         })
@@ -609,7 +609,7 @@ class InvoiceValidation(models.Model):
         )
 
         # --- FR-07: Antrian Pengecualian -------------------------------
-        if new_state == 'mismatch':
+        if new_state == 'INVALID':
             self._route_to_exception_queue(notes, {
                 'Vendor': vendor_match, 'PO Number': po_match,
                 'Quantity': all_lines_match_qty, 'Price': all_lines_match_price,
