@@ -11,7 +11,6 @@
               parent="menu_iv_root" action="iv_action_all" sequence="20"
               groups="invoice_validation.group_invoice_validation_user"/>
 
-    
     <menuitem id="menu_iv_audit_log" name="Audit Log"
               parent="menu_iv_root" action="iv_audit_log_action" sequence="30"
               groups="invoice_validation.group_invoice_validation_user"/>

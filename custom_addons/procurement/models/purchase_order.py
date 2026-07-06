@@ -14,6 +14,12 @@ class ProcurementPurchaseOrder(models.Model):
 class ProcurementPurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 
+#hapus saja nanti
+    def write(self, vals):
+        print("WRITE =", vals)
+        return super().write(vals)
+    
+
     # ------------------------------------------------------------
     # Odoo standar menghitung ulang price_unit secara OTOMATIS dari
     # Vendor Pricelist (supplierinfo) setiap kali field lain di baris
