@@ -278,7 +278,7 @@
 
                     <!-- Status besar di atas -->
                     <div class="ivdash-result-status">
-                        <span class="ivdash-result-status-label">Status Keseluruhan</span>
+                        <span class="ivdash-result-status-label">Status Invoice</span>
                         <span t-att-class="statusBadgeClass(state.detail.state) + ' ivdash-result-badge'">
                             <t t-esc="state.detail.state_label"/>
                         </span>
@@ -324,7 +324,7 @@
                     </table>
 
                     <!-- Perbandingan Line Item: Invoice vs PO vs GR -->
-                    <div class="ivdash-lines-header">Perbandingan Item — Invoice vs PO vs Goods Receipt</div>
+                    <div class="ivdash-lines-header">Hasil Validasi Item (Produk)</div>
                     <div class="ivdash-compare-scroll">
                         <table class="ivdash-compare-table ivdash-compare-lines">
                             <thead>
@@ -374,7 +374,7 @@
                     </div>
 
                     <div t-if="state.detail.mismatch_notes" class="ivdash-notes">
-                        <div class="ivdash-notes-title">Catatan Detail</div>
+                        <div class="ivdash-notes-title">Catatan Detail Permasalahan</div>
                         <pre class="ivdash-notes-body"><t t-esc="state.detail.mismatch_notes"/></pre>
                     </div>
 
